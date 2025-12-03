@@ -141,13 +141,13 @@ export default function Dashboard() {
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <div style={{ width: '60px', height: '6px', background: '#F5F5F5', borderRadius: '3px', overflow: 'hidden' }}>
                                     <div style={{
-                                        width: `${Math.min(100, (item.calories / user.goalCalories) * 100)}%`,
+                                        width: `${user.goalCalories ? Math.min(100, (item.calories / user.goalCalories) * 100) : 0}%`,
                                         height: '100%',
                                         background: '#2E7D32'
                                     }}></div>
                                 </div>
                                 <span style={{ fontSize: '12px', color: '#757575', width: '30px', textAlign: 'right' }}>
-                                    {Math.round((item.calories / user.goalCalories) * 100)}%
+                                    {user.goalCalories ? Math.round((item.calories / user.goalCalories) * 100) : 0}%
                                 </span>
                             </div>
                             <button

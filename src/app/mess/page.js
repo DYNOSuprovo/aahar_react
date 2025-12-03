@@ -124,8 +124,8 @@ export default function Mess() {
         const special = menu.weekly[selectedDay];
 
         if (special && (special.type === 'choice' || special.type === 'special')) {
-            const vegName = special.veg.name;
-            const nonVegName = special.nonVeg.name;
+            const vegName = special.veg?.name;
+            const nonVegName = special.nonVeg?.name;
 
             setQuantities(prev => {
                 const newState = { ...prev };
