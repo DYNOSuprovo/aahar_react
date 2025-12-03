@@ -355,7 +355,8 @@ export default function Mess() {
                                 alignItems: 'center',
                                 cursor: 'pointer',
                                 boxShadow: idx === selectedDay ? '0 4px 12px rgba(46, 125, 50, 0.3)' : '0 2px 4px rgba(0,0,0,0.06)',
-                                transition: 'all 0.3s',
+                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                transform: idx === selectedDay ? 'scale(1.05)' : 'scale(1)',
                                 border: idx === todayIndex ? '2px solid #4CAF50' : 'none'
                             }}
                         >
@@ -388,8 +389,10 @@ export default function Mess() {
                                 fontSize: '14px',
                                 cursor: 'pointer',
                                 textTransform: 'capitalize',
-                                boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-                                whiteSpace: 'nowrap'
+                                boxShadow: meal === selectedMeal ? '0 4px 12px rgba(46, 125, 50, 0.2)' : '0 2px 4px rgba(0,0,0,0.05)',
+                                whiteSpace: 'nowrap',
+                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                transform: meal === selectedMeal ? 'scale(1.05)' : 'scale(1)'
                             }}
                         >
                             {meal}

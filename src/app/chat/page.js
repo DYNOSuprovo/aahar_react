@@ -64,10 +64,9 @@ export default function Chat() {
             <div style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: '80px' }}>
                 {messages.map((msg, idx) => (
                     <div key={idx} style={{
-                        display: 'flex',
-                        flexDirection: 'column',
                         alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start',
-                        marginBottom: '24px'
+                        marginBottom: '24px',
+                        animation: 'slideUp 0.3s ease-out forwards'
                     }}>
                         <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', flexDirection: msg.role === 'user' ? 'row-reverse' : 'row' }}>
                             <div style={{
@@ -120,7 +119,22 @@ export default function Chat() {
                         )}
                     </div>
                 ))}
-                {loading && <div style={{ marginLeft: '40px', color: '#757575', fontSize: '12px' }}>AaharAI is typing...</div>}
+                {loading && (
+                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', marginLeft: '0', animation: 'fadeIn 0.3s' }}>
+                        <div style={{
+                            width: '32px', height: '32px', borderRadius: '50%', background: 'black', color: 'white',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px'
+                        }}>AI</div>
+                        <div style={{
+                            display: 'flex', gap: '4px', padding: '16px', background: 'white', borderRadius: '16px', borderTopLeftRadius: '4px',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                        }}>
+                            <div style={{ width: '8px', height: '8px', background: '#BDBDBD', borderRadius: '50%', animation: 'float 1s infinite' }}></div>
+                            <div style={{ width: '8px', height: '8px', background: '#BDBDBD', borderRadius: '50%', animation: 'float 1s infinite 0.2s' }}></div>
+                            <div style={{ width: '8px', height: '8px', background: '#BDBDBD', borderRadius: '50%', animation: 'float 1s infinite 0.4s' }}></div>
+                        </div>
+                    </div>
+                )}
                 <div ref={messagesEndRef} />
             </div>
 

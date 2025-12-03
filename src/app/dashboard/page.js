@@ -4,6 +4,27 @@ import { useUser } from '../../context/UserContext';
 import { ChevronLeft, ChevronRight, Calendar, Plus, Search, X, Utensils, Trash2 } from 'lucide-react';
 import { searchFood, analyzeMeal } from '../../lib/api';
 
+const CountUp = ({ end, duration = 1500 }) => {
+    const [count, setCount] = useState(0);
+    useEffect(() => {
+        let startTime;
+        let animationFrame;
+        const animate = (time) => {
+            if (!startTime) startTime = time;
+            const progress = time - startTime;
+            // Ease out cubic
+            const percentage = 1 - Math.pow(1 - Math.min(progress / duration, 1), 3);
+            setCount(Math.floor(end * percentage));
+            if (progress < duration) {
+                animationFrame = requestAnimationFrame(animate);
+            }
+        };
+        animationFrame = requestAnimationFrame(animate);
+        return () => cancelAnimationFrame(animationFrame);
+    }, [end, duration]);
+    return <span>{count}</span>;
+};
+
 export default function Dashboard() {
     const { user, meals, addFood, removeFood } = useUser();
     const [isAddFoodOpen, setIsAddFoodOpen] = useState(false);
@@ -194,18 +215,26 @@ export default function Dashboard() {
             {/* Calories Progress */}
             <div className="animate-slide-up delay-100" style={{ marginBottom: '32px' }}>
                 <h2 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px', color: '#1A1A1A' }}>Calories Progress</h2>
-                <div style={{ display: 'flex', justifyContent: 'space-between', textAlign: 'center' }}>
+                <div className="card" style={{ display: 'flex', justifyContent: 'space-between', textAlign: 'center', padding: '24px' }}>
                     <div>
-                        <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#1A1A1A' }}>{user.goalCalories}</div>
-                        <div style={{ fontSize: '12px', color: '#757575' }}>Goal</div>
+                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1A1A1A' }}>
+                            <CountUp end={user.goalCalories} />
+                        </div>
+                        <div style={{ fontSize: '13px', color: '#757575', marginTop: '4px' }}>Goal</div>
                     </div>
+                    <div style={{ width: '1px', background: '#EEEEEE' }}></div>
                     <div>
-                        <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#1A1A1A' }}>{totalCalories}</div>
-                        <div style={{ fontSize: '12px', color: '#757575' }}>Logged</div>
+                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#2E7D32' }}>
+                            <CountUp end={totalCalories} />
+                        </div>
+                        <div style={{ fontSize: '13px', color: '#757575', marginTop: '4px' }}>Logged</div>
                     </div>
+                    <div style={{ width: '1px', background: '#EEEEEE' }}></div>
                     <div>
-                        <div style={{ fontSize: '18px', fontWeight: 'bold', color: remainingCalories < 0 ? '#D32F2F' : '#2E7D32' }}>{remainingCalories}</div>
-                        <div style={{ fontSize: '12px', color: '#757575' }}>Remaining</div>
+                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: remainingCalories < 0 ? '#D32F2F' : '#1A1A1A' }}>
+                            {remainingCalories}
+                        </div>
+                        <div style={{ fontSize: '13px', color: '#757575', marginTop: '4px' }}>Remaining</div>
                     </div>
                 </div>
             </div>
@@ -299,22 +328,24 @@ export default function Dashboard() {
 
             {/* Add Food Modal */}
             {isAddFoodOpen && (
-                <div style={{
+                <div className="animate-fade-in" style={{
                     position: 'fixed',
                     top: 0, left: 0, right: 0, bottom: 0,
-                    background: 'rgba(0,0,0,0.5)',
+                    background: 'rgba(0,0,0,0.6)',
+                    backdropFilter: 'blur(4px)',
                     zIndex: 10000,
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'flex-end'
                 }}>
-                    <div style={{
+                    <div className="animate-slide-up" style={{
                         background: 'white',
                         borderRadius: '24px 24px 0 0',
                         padding: '24px',
-                        height: '80vh',
+                        height: '85vh',
                         display: 'flex',
-                        flexDirection: 'column'
+                        flexDirection: 'column',
+                        boxShadow: '0 -4px 20px rgba(0,0,0,0.1)'
                     }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                             <h3 style={{ fontSize: '18px', fontWeight: 'bold' }}>Add to {selectedMealType}</h3>
