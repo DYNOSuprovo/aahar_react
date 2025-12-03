@@ -1,6 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from 'react';
 import { Send, User, Bot, Copy, ThumbsUp, ThumbsDown, Share2 } from 'lucide-react';
+import { sendMessageToBackend } from '../../lib/api';
 
 export default function Chat() {
     const [messages, setMessages] = useState([
@@ -31,36 +32,18 @@ export default function Chat() {
         setLoading(true);
 
         try {
-            // Client-side Gemini call
-            const { GoogleGenerativeAI } = await import("@google/generative-ai");
-            const { NEXT_PUBLIC_GEMINI_API_KEY } = await import("../../lib/config");
+            const responseText = await sendMessageToBackend(userMsg.content);
 
-            const genAI = new GoogleGenerativeAI(NEXT_PUBLIC_GEMINI_API_KEY);
-            const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-
-            const chat = model.startChat({
-                history: messages.filter(m => m.role !== 'system').map(msg => ({
-                    role: msg.role === 'user' ? 'user' : 'model',
-                    parts: [{ text: msg.content }],
-                })),
-            });
-
-            const result = await chat.sendMessage(userMsg.content);
-            const response = await result.response;
-            const text = response.text();
-
-            if (text) {
-                setMessages(prev => [...prev, {
-                    role: 'model',
-                    content: text,
-                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                }]);
-            }
+            setMessages(prev => [...prev, {
+                role: 'model',
+                content: responseText,
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            }]);
         } catch (error) {
             console.error("Error:", error);
             setMessages(prev => [...prev, {
                 role: 'model',
-                content: "Sorry, I'm having trouble connecting right now. Please check your internet connection.",
+                content: "Sorry, I'm having trouble connecting to the server. It might be waking up (free tier). Please try again in a moment.",
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             }]);
         } finally {
