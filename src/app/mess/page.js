@@ -108,10 +108,11 @@ export default function Mess() {
     const updateQuantity = (itemName, delta) => {
         if (bookedMeals[selectedMeal] && selectedDay === todayIndex) return; // Prevent editing if already booked today
 
+        const key = `${selectedMeal}-${itemName}`;
         setQuantities(prev => {
-            const currentQty = prev[itemName] || 0;
+            const currentQty = prev[key] || 0;
             const newQty = Math.max(0, currentQty + delta);
-            return { ...prev, [itemName]: newQty };
+            return { ...prev, [key]: newQty };
         });
     };
 
@@ -126,26 +127,30 @@ export default function Mess() {
         if (special && (special.type === 'choice' || special.type === 'special')) {
             const vegName = special.veg?.name;
             const nonVegName = special.nonVeg?.name;
+            const vegKey = `${selectedMeal}-${vegName}`;
+            const nonVegKey = `${selectedMeal}-${nonVegName}`;
+            const itemKey = `${selectedMeal}-${itemName}`;
 
             setQuantities(prev => {
                 const newState = { ...prev };
 
                 // If selecting current item
-                if (!newState[itemName]) {
-                    newState[itemName] = 1;
+                if (!newState[itemKey]) {
+                    newState[itemKey] = 1;
                     // Deselect other option
-                    if (itemName === vegName) newState[nonVegName] = 0;
-                    if (itemName === nonVegName) newState[vegName] = 0;
+                    if (itemName === vegName && nonVegName) newState[nonVegKey] = 0;
+                    if (itemName === nonVegName && vegName) newState[vegKey] = 0;
                 } else {
-                    newState[itemName] = 0;
+                    newState[itemKey] = 0;
                 }
                 return newState;
             });
         } else {
             // Simple toggle for single items
+            const key = `${selectedMeal}-${itemName}`;
             setQuantities(prev => ({
                 ...prev,
-                [itemName]: prev[itemName] ? 0 : 1
+                [key]: prev[key] ? 0 : 1
             }));
         }
     };
@@ -157,7 +162,8 @@ export default function Mess() {
 
         // Add staples
         menu.staples.forEach(staple => {
-            const qty = quantities[staple.name] || 0;
+            const key = `${selectedMeal}-${staple.name}`;
+            const qty = quantities[key] || 0;
             if (qty > 0) {
                 itemsToLog.push({ ...staple, quantity: qty });
             }
@@ -166,22 +172,26 @@ export default function Mess() {
         // Add specials
         if (special) {
             if (special.type === 'choice' || special.type === 'special') {
-                if (quantities[special.veg.name]) itemsToLog.push({ ...special.veg, quantity: 1 });
-                if (quantities[special.nonVeg?.name]) itemsToLog.push({ ...special.nonVeg, quantity: 1 });
+                const vegKey = `${selectedMeal}-${special.veg?.name}`;
+                const nonVegKey = `${selectedMeal}-${special.nonVeg?.name}`;
+
+                if (quantities[vegKey]) itemsToLog.push({ ...special.veg, quantity: 1 });
+                if (quantities[nonVegKey]) itemsToLog.push({ ...special.nonVeg, quantity: 1 });
+
                 if (special.extras) {
                     special.extras.forEach(extra => {
-                        // Auto-add extras if main is selected? Or let user choose?
-                        // For simplicity, let's assume extras come with the meal if any main is selected
-                        if (quantities[special.veg.name] || quantities[special.nonVeg?.name]) {
+                        if (quantities[vegKey] || quantities[nonVegKey]) {
                             itemsToLog.push({ ...extra, quantity: 1 });
                         }
                     });
                 }
             } else if (special.name) { // Single item
-                if (quantities[special.name]) itemsToLog.push({ ...special, quantity: 1 });
+                const key = `${selectedMeal}-${special.name}`;
+                if (quantities[key]) itemsToLog.push({ ...special, quantity: 1 });
             } else if (special.items) { // Fixed list
                 special.items.forEach(item => {
-                    if (quantities[item.name]) itemsToLog.push({ ...item, quantity: 1 });
+                    const key = `${selectedMeal}-${item.name}`;
+                    if (quantities[key]) itemsToLog.push({ ...item, quantity: 1 });
                 });
             }
         }
@@ -201,7 +211,8 @@ export default function Mess() {
     };
 
     const renderStapleCounter = (item) => {
-        const qty = quantities[item.name] || 0;
+        const key = `${selectedMeal}-${item.name}`;
+        const qty = quantities[key] || 0;
         const isBooked = bookedMeals[selectedMeal] && selectedDay === todayIndex;
         const isToday = selectedDay === todayIndex;
 
@@ -265,7 +276,8 @@ export default function Mess() {
     };
 
     const renderMainItem = (item) => {
-        const isSelected = quantities[item.name] > 0;
+        const key = `${selectedMeal}-${item.name}`;
+        const isSelected = quantities[key] > 0;
         const isBooked = bookedMeals[selectedMeal] && selectedDay === todayIndex;
         const isToday = selectedDay === todayIndex;
 
