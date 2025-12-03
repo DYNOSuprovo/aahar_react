@@ -1,21 +1,16 @@
 "use client";
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useUser } from '../../context/UserContext';
 import { ChevronLeft, ChevronRight, Calendar, Plus, Search, X, Utensils, Trash2 } from 'lucide-react';
+import { searchFood, analyzeMeal } from '../../lib/api';
 
 export default function Dashboard() {
     const { user, meals, addFood, removeFood } = useUser();
     const [isAddFoodOpen, setIsAddFoodOpen] = useState(false);
     const [selectedMealType, setSelectedMealType] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
-    const [nutritionData, setNutritionData] = useState([]);
-
-    useEffect(() => {
-        fetch('/nutrition_data.json')
-            .then(res => res.json())
-            .then(data => setNutritionData(data))
-            .catch(err => console.error("Failed to load nutrition data", err));
-    }, []);
+    const [searchResults, setSearchResults] = useState([]);
+    const [isSearching, setIsSearching] = useState(false);
 
     // Calculate totals
     const totalCalories = meals.breakfast.reduce((acc, item) => acc + parseInt(item.calories), 0) +
@@ -52,12 +47,21 @@ export default function Dashboard() {
         setIsAddFoodOpen(false);
     };
 
-    const filteredFood = useMemo(() => {
-        if (!searchTerm) return [];
-        return nutritionData.filter(item =>
-            item["Dish Name"].toLowerCase().includes(searchTerm.toLowerCase())
-        ).slice(0, 20); // Limit results
-    }, [searchTerm, nutritionData]);
+    // Debounced Search
+    useEffect(() => {
+        const delayDebounceFn = setTimeout(async () => {
+            if (searchTerm.length > 2) {
+                setIsSearching(true);
+                const results = await searchFood(searchTerm);
+                setSearchResults(results);
+                setIsSearching(false);
+            } else {
+                setSearchResults([]);
+            }
+        }, 500);
+
+        return () => clearTimeout(delayDebounceFn);
+    }, [searchTerm]);
 
     const [analysis, setAnalysis] = useState(null);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -66,43 +70,16 @@ export default function Dashboard() {
         setIsAnalyzing(true);
         setAnalysis(null);
         try {
-            // Client-side Gemini call
-            const { GoogleGenerativeAI } = await import("@google/generative-ai");
-            const { NEXT_PUBLIC_GEMINI_API_KEY } = await import("../../lib/config");
-
-            const genAI = new GoogleGenerativeAI(NEXT_PUBLIC_GEMINI_API_KEY);
-            const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-
-            // Construct summary
             const allMeals = [...meals.breakfast, ...meals.lunch, ...meals.snack, ...meals.dinner];
-
             if (allMeals.length === 0) {
                 setAnalysis("You haven't logged any meals yet. Please add some food items so I can analyze your intake.");
                 setIsAnalyzing(false);
                 return;
             }
 
-            const mealSummary = allMeals.map(m => `${m.name} (${m.calories} kcal, P:${m.protein}g, C:${m.carbs}g, F:${m.fat}g)`).join(", ");
-            const totalCalories = allMeals.reduce((acc, item) => acc + (parseInt(item.calories) || 0), 0);
-
-            const prompt = `
-            Analyze this daily food intake for a user with the following profile:
-            - Goal Calories: ${user.goalCalories}
-            - Current Intake: ${totalCalories} kcal
-            
-            Food Log:
-            ${mealSummary}
-            
-            Please provide a brief, friendly assessment (max 3-4 sentences). 
-            1. Is the intake sufficient, excess, or deficient?
-            2. Are there any major nutritional gaps or excesses based on the items?
-            3. Give one specific tip for the next meal.
-            Keep the tone encouraging and helpful.
-            `;
-
-            const result = await model.generateContent(prompt);
-            const response = await result.response;
-            setAnalysis(response.text());
+            const dishNames = allMeals.map(m => m.name);
+            const result = await analyzeMeal(dishNames);
+            setAnalysis(result.analysis);
         } catch (error) {
             console.error("Analysis failed", error);
             setAnalysis("Sorry, I couldn't analyze your intake right now. Please check your internet connection.");
@@ -372,7 +349,10 @@ export default function Dashboard() {
                         </div>
 
                         <div style={{ flex: 1, overflowY: 'auto' }}>
-                            {filteredFood.map((item, idx) => (
+                            {isSearching && (
+                                <div style={{ textAlign: 'center', color: '#757575', padding: '20px' }}>Searching...</div>
+                            )}
+                            {!isSearching && searchResults.map((item, idx) => (
                                 <div key={idx} onClick={() => handleAddFood(item)} style={{
                                     padding: '16px 0',
                                     borderBottom: '1px solid #EEEEEE',
@@ -384,7 +364,7 @@ export default function Dashboard() {
                                     </div>
                                 </div>
                             ))}
-                            {searchTerm && filteredFood.length === 0 && (
+                            {!isSearching && searchTerm.length > 2 && searchResults.length === 0 && (
                                 <div style={{ textAlign: 'center', color: '#9E9E9E', marginTop: '20px' }}>
                                     No results found.
                                 </div>

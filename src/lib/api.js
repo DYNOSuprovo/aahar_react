@@ -29,8 +29,7 @@ export const sendMessageToBackend = async (message) => {
         }
 
         const data = await response.json();
-        // Handle different possible response formats
-        return data.response || data.answer || data.message || JSON.stringify(data);
+        return data.answer || data.response || JSON.stringify(data);
     } catch (error) {
         console.error("API Error:", error);
         throw error;
@@ -47,5 +46,33 @@ export const getChatHistory = async () => {
     } catch (error) {
         console.error("History Error:", error);
         return [];
+    }
+};
+
+export const searchFood = async (query) => {
+    if (!query) return [];
+    try {
+        const response = await fetch(`${BACKEND_URL}/nutrition/search/${encodeURIComponent(query)}`);
+        if (!response.ok) return [];
+        const data = await response.json();
+        return data.results || [];
+    } catch (error) {
+        console.error("Search Error:", error);
+        return [];
+    }
+};
+
+export const analyzeMeal = async (dishNames) => {
+    try {
+        const response = await fetch(`${BACKEND_URL}/analyze-meal`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ dish_names: dishNames })
+        });
+        if (!response.ok) throw new Error("Analysis failed");
+        return await response.json();
+    } catch (error) {
+        console.error("Analysis Error:", error);
+        throw error;
     }
 };
