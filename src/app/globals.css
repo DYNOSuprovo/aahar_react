@@ -20,6 +20,7 @@
   padding: 0;
   margin: 0;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 html,
@@ -30,6 +31,20 @@ body {
   background-color: var(--background);
   color: var(--text-dark);
   -webkit-tap-highlight-color: transparent;
+  /* Performance optimizations */
+  scroll-behavior: smooth;
+}
+
+/* GPU Acceleration for better performance */
+.animate-fade-in,
+.animate-slide-up,
+.animate-scale-in,
+.card,
+.btn,
+.btn-interactive {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 a {

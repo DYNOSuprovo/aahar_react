@@ -65,7 +65,6 @@ const loadNutritionData = async () => {
             return [];
         }
         nutritionDataCache = await response.json();
-        console.log(`📚 Loaded ${nutritionDataCache.length} food items from local database`);
         return nutritionDataCache;
     } catch (error) {
         console.error('Error loading nutrition data:', error);
@@ -77,13 +76,10 @@ export const searchFood = async (query) => {
     if (!query) return [];
 
     try {
-        console.log(`🔍 Searching for: "${query}"`);
-
         // Load nutrition data
         const nutritionData = await loadNutritionData();
 
         if (!nutritionData || nutritionData.length === 0) {
-            console.error('❌ No nutrition data available');
             return [];
         }
 
@@ -99,14 +95,10 @@ export const searchFood = async (query) => {
                 region.includes(searchTerm);
         });
 
-        console.log(`✅ Found ${results.length} results for "${query}"`);
-        console.log(`📊 Sample results:`, results.slice(0, 3));
-
-        // Return top 50 results to avoid overwhelming the UI
-        return results.slice(0, 50);
-
+        // Return top 30 results for better performance
+        return results.slice(0, 30);
     } catch (error) {
-        console.error("❌ Search Error:", error);
+        console.error("Search Error:", error);
         return [];
     }
 };

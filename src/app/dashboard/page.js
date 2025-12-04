@@ -68,8 +68,9 @@ export default function Dashboard() {
         setIsAddFoodOpen(false);
     };
 
-    // Smart filter based on dietary preferences
-    const filterByPreferences = (results) => {
+
+    // Smart filter based on dietary preferences - optimized with useCallback
+    const filterByPreferences = useCallback((results) => {
         if (!results || results.length === 0) return [];
 
         let filtered = results;
@@ -115,7 +116,7 @@ export default function Dashboard() {
         }
 
         return filtered;
-    };
+    }, [preferences]);
 
     // Debounced Search with dietary filtering
     useEffect(() => {
