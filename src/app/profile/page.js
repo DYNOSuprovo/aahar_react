@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { User, Bell, ChevronRight, Scale, Activity, Flame, Droplets, Edit2, Save, X, Camera } from 'lucide-react';
 import { Line } from 'react-chartjs-2';
 import {
@@ -28,6 +29,7 @@ ChartJS.register(
 );
 
 export default function Profile() {
+    const router = useRouter();
     const { user, updateProfile, preferences, togglePreference, resetApp, dailyStats } = useUser();
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({ ...user });
@@ -371,21 +373,40 @@ export default function Profile() {
 
                 {/* Settings Links */}
                 <div style={{ background: 'white', borderRadius: '20px', padding: '8px 20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-                    {['Notifications', 'Privacy Policy', 'About Aahar Diet'].map((item, idx) => (
-                        <div key={item} style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            padding: '16px 0',
-                            borderBottom: idx < 2 ? '1px solid #F5F5F5' : 'none',
-                            cursor: 'pointer'
-                        }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                <span style={{ fontSize: '15px', color: '#333', fontWeight: '500' }}>{item}</span>
-                            </div>
-                            <ChevronRight size={18} color="#BDBDBD" />
-                        </div>
-                    ))}
+                    {/* Privacy Policy */}
+                <div 
+                    onClick={() => router.push('/privacy')}
+                    style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '16px 0',
+                        borderBottom: '1px solid #F5F5F5',
+                        cursor: 'pointer'
+                    }}
+                >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <span style={{ fontSize: '15px', color: '#333', fontWeight: '500' }}>Privacy Policy</span>
+                    </div>
+                    <ChevronRight size={18} color="#BDBDBD" />
+                </div>
+
+                {/* About Aahar Diet */}
+                <div 
+                    onClick={() => router.push('/about')}
+                    style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '16px 0',
+                        cursor: 'pointer'
+                    }}
+                >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <span style={{ fontSize: '15px', color: '#333', fontWeight: '500' }}>About Aahar Diet</span>
+                    </div>
+                    <ChevronRight size={18} color="#BDBDBD" />
+                </div>
                 </div>
 
                 {/* Reset Button */}

@@ -26,7 +26,7 @@ const CountUp = ({ end, duration = 1500 }) => {
 };
 
 export default function Dashboard() {
-    const { user, meals, addFood, removeFood } = useUser();
+    const { user, meals, addFood, removeFood, preferences } = useUser();
     const [isAddFoodOpen, setIsAddFoodOpen] = useState(false);
     const [selectedMealType, setSelectedMealType] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
@@ -68,13 +68,64 @@ export default function Dashboard() {
         setIsAddFoodOpen(false);
     };
 
-    // Debounced Search
+    // Smart filter based on dietary preferences
+    const filterByPreferences = (results) => {
+        if (!results || results.length === 0) return [];
+
+        let filtered = results;
+
+        // Non-vegetarian indicators
+        const nonVegKeywords = ['chicken', 'mutton', 'fish', 'egg', 'prawn', 'meat', 'lamb', 'beef', 'pork'];
+
+        // Gluten-containing grains
+        const glutenKeywords = ['wheat', 'maida', 'atta', 'roti', 'naan', 'paratha', 'bread'];
+
+        // Dairy indicators
+        const dairyKeywords = ['paneer', 'cheese', 'milk', 'curd', 'yogurt', 'ghee', 'butter', 'cream'];
+
+        if (preferences.vegetarian) {
+            filtered = filtered.filter(item => {
+                const dishName = item["Dish Name"]?.toLowerCase() || '';
+                const category = item["Category"]?.toLowerCase() || '';
+                return !nonVegKeywords.some(keyword =>
+                    dishName.includes(keyword) || category.includes(keyword)
+                );
+            });
+        }
+
+        if (preferences.glutenFree) {
+            filtered = filtered.filter(item => {
+                const dishName = item["Dish Name"]?.toLowerCase() || '';
+                return !glutenKeywords.some(keyword => dishName.includes(keyword));
+            });
+        }
+
+        if (preferences.dairyFree) {
+            filtered = filtered.filter(item => {
+                const dishName = item["Dish Name"]?.toLowerCase() || '';
+                return !dairyKeywords.some(keyword => dishName.includes(keyword));
+            });
+        }
+
+        if (preferences.lowCarb) {
+            filtered = filtered.filter(item => {
+                const carbs = parseFloat(item["Carbs (g)"]) || 0;
+                return carbs < 15; // Low carb threshold: less than 15g per serving
+            });
+        }
+
+        return filtered;
+    };
+
+    // Debounced Search with dietary filtering
     useEffect(() => {
         const delayDebounceFn = setTimeout(async () => {
             if (searchTerm.length > 2) {
                 setIsSearching(true);
                 const results = await searchFood(searchTerm);
-                setSearchResults(results);
+                // Apply dietary preferences filter
+                const filteredResults = filterByPreferences(results);
+                setSearchResults(filteredResults);
                 setIsSearching(false);
             } else {
                 setSearchResults([]);
@@ -82,7 +133,7 @@ export default function Dashboard() {
         }, 500);
 
         return () => clearTimeout(delayDebounceFn);
-    }, [searchTerm]);
+    }, [searchTerm, preferences]);
 
     const [analysis, setAnalysis] = useState(null);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -378,6 +429,58 @@ export default function Dashboard() {
                                 autoFocus
                             />
                         </div>
+
+                        {/* Active Filters Badge */}
+                        {(preferences.vegetarian || preferences.glutenFree || preferences.dairyFree || preferences.lowCarb) && (
+                            <div style={{
+                                display: 'flex',
+                                flexWrap: 'wrap',
+                                gap: '8px',
+                                marginBottom: '16px'
+                            }}>
+                                <span style={{ fontSize: '12px', color: '#757575', marginRight: '4px' }}>Filters:</span>
+                                {preferences.vegetarian && (
+                                    <span style={{
+                                        background: '#E8F5E9',
+                                        color: '#2E7D32',
+                                        padding: '4px 10px',
+                                        borderRadius: '12px',
+                                        fontSize: '12px',
+                                        fontWeight: '500'
+                                    }}>🌱 Vegetarian</span>
+                                )}
+                                {preferences.glutenFree && (
+                                    <span style={{
+                                        background: '#FFF3E0',
+                                        color: '#F57C00',
+                                        padding: '4px 10px',
+                                        borderRadius: '12px',
+                                        fontSize: '12px',
+                                        fontWeight: '500'
+                                    }}>🌾 Gluten Free</span>
+                                )}
+                                {preferences.dairyFree && (
+                                    <span style={{
+                                        background: '#E3F2FD',
+                                        color: '#1976D2',
+                                        padding: '4px 10px',
+                                        borderRadius: '12px',
+                                        fontSize: '12px',
+                                        fontWeight: '500'
+                                    }}>🥛 Dairy Free</span>
+                                )}
+                                {preferences.lowCarb && (
+                                    <span style={{
+                                        background: '#F3E5F5',
+                                        color: '#7B1FA2',
+                                        padding: '4px 10px',
+                                        borderRadius: '12px',
+                                        fontSize: '12px',
+                                        fontWeight: '500'
+                                    }}>⚡ Low Carb</span>
+                                )}
+                            </div>
+                        )}
 
                         <div style={{ flex: 1, overflowY: 'auto' }}>
                             {isSearching && (
