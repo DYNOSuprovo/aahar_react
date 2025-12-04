@@ -4,10 +4,14 @@ import { UserProvider } from '../context/UserContext';
 
 export const metadata = {
     title: 'Aahar - Nutrition with Tradition',
-    description: 'Your personal health journey companion',
+    description: 'Track your nutrition with traditional Indian foods. Smart calorie tracking, AI assistant, and personalized meal planning.',
     manifest: '/manifest.json',
     themeColor: '#2E7D32',
     viewport: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0',
+    icons: {
+        icon: '/icon.svg',
+        apple: '/icon.svg',
+    },
 };
 
 export default function RootLayout({ children }) {
