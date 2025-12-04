@@ -52,12 +52,24 @@ export const getChatHistory = async () => {
 export const searchFood = async (query) => {
     if (!query) return [];
     try {
-        const response = await fetch(`${BACKEND_URL}/nutrition/search/${encodeURIComponent(query)}`);
-        if (!response.ok) return [];
+        console.log(`🔍 Searching for: "${query}"`);
+        const url = `${BACKEND_URL}/nutrition/search/${encodeURIComponent(query)}`;
+        console.log(`📡 API URL: ${url}`);
+
+        const response = await fetch(url);
+        console.log(`✅ Response status: ${response.status}`);
+
+        if (!response.ok) {
+            console.error(`❌ Search failed with status: ${response.status}`);
+            return [];
+        }
+
         const data = await response.json();
+        console.log(`📊 Search results:`, data);
+        console.log(`📝 Number of results: ${data.results?.length || 0}`);
         return data.results || [];
     } catch (error) {
-        console.error("Search Error:", error);
+        console.error("❌ Search Error:", error);
         return [];
     }
 };
