@@ -1,5 +1,8 @@
 const BACKEND_URL = "https://diet-suggest-aahar.onrender.com";
 
+// Cache for nutrition data
+let nutritionDataCache = null;
+
 export const getSessionId = () => {
     if (typeof window === 'undefined') return null;
     let sessionId = localStorage.getItem('aahar_session_id');
@@ -49,25 +52,59 @@ export const getChatHistory = async () => {
     }
 };
 
+// Load nutrition data from local JSON file
+const loadNutritionData = async () => {
+    if (nutritionDataCache) {
+        return nutritionDataCache;
+    }
+
+    try {
+        const response = await fetch('/nutrition_data.json');
+        if (!response.ok) {
+            console.error('Failed to load nutrition data');
+            return [];
+        }
+        nutritionDataCache = await response.json();
+        console.log(`📚 Loaded ${nutritionDataCache.length} food items from local database`);
+        return nutritionDataCache;
+    } catch (error) {
+        console.error('Error loading nutrition data:', error);
+        return [];
+    }
+};
+
 export const searchFood = async (query) => {
     if (!query) return [];
+
     try {
         console.log(`🔍 Searching for: "${query}"`);
-        const url = `${BACKEND_URL}/nutrition/search/${encodeURIComponent(query)}`;
-        console.log(`📡 API URL: ${url}`);
 
-        const response = await fetch(url);
-        console.log(`✅ Response status: ${response.status}`);
+        // Load nutrition data
+        const nutritionData = await loadNutritionData();
 
-        if (!response.ok) {
-            console.error(`❌ Search failed with status: ${response.status}`);
+        if (!nutritionData || nutritionData.length === 0) {
+            console.error('❌ No nutrition data available');
             return [];
         }
 
-        const data = await response.json();
-        console.log(`📊 Search results:`, data);
-        console.log(`📝 Number of results: ${data.results?.length || 0}`);
-        return data.results || [];
+        // Perform case-insensitive search
+        const searchTerm = query.toLowerCase().trim();
+        const results = nutritionData.filter(item => {
+            const dishName = item["Dish Name"]?.toLowerCase() || '';
+            const category = item["Category"]?.toLowerCase() || '';
+            const region = item["Region"]?.toLowerCase() || '';
+
+            return dishName.includes(searchTerm) ||
+                category.includes(searchTerm) ||
+                region.includes(searchTerm);
+        });
+
+        console.log(`✅ Found ${results.length} results for "${query}"`);
+        console.log(`📊 Sample results:`, results.slice(0, 3));
+
+        // Return top 50 results to avoid overwhelming the UI
+        return results.slice(0, 50);
+
     } catch (error) {
         console.error("❌ Search Error:", error);
         return [];
