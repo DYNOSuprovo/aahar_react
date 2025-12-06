@@ -1,7 +1,7 @@
 "use client";
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useUser } from '../../context/UserContext';
-import { ChevronLeft, ChevronRight, Calendar, Plus, Search, X, Utensils, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Plus, Minus, Search, X, Utensils, Trash2 } from 'lucide-react';
 import { searchFood, analyzeMeal } from '../../lib/api';
 
 const CountUp = ({ end, duration = 1500 }) => {
@@ -26,12 +26,16 @@ const CountUp = ({ end, duration = 1500 }) => {
 };
 
 export default function Dashboard() {
-    const { user, meals, addFood, removeFood, preferences } = useUser();
+    const { user, meals, addFood, removeFood, updateFoodQuantity, preferences } = useUser();
     const [isAddFoodOpen, setIsAddFoodOpen] = useState(false);
     const [selectedMealType, setSelectedMealType] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [searchResults, setSearchResults] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
+
+    // Quantity Selection State
+    const [selectedItemForQuant, setSelectedItemForQuant] = useState(null);
+    const [itemQuantity, setItemQuantity] = useState(1);
 
     // Calculate totals
     const totalCalories = meals.breakfast.reduce((acc, item) => acc + parseInt(item.calories), 0) +
@@ -57,15 +61,38 @@ export default function Dashboard() {
         setSearchTerm('');
     };
 
-    const handleAddFood = (item) => {
+    const handleFoodClick = (item) => {
+        setSelectedItemForQuant(item);
+        setItemQuantity(1);
+    };
+
+    const confirmAddFood = () => {
+        if (!selectedItemForQuant) return;
+
+        const multiplier = itemQuantity;
+
+        // Safe parsing helper
+        const getVal = (key) => parseFloat(selectedItemForQuant[key]) || 0;
+
         addFood(selectedMealType, {
-            name: item["Dish Name"],
-            calories: item["Calories (kcal)"],
-            protein: item["Protein (g)"],
-            carbs: item["Carbs (g)"],
-            fat: item["Fat (g)"]
+            name: selectedItemForQuant["Dish Name"],
+            calories: Math.round(getVal("Calories (kcal)") * multiplier),
+            protein: (getVal("Protein (g)") * multiplier).toFixed(1),
+            carbs: (getVal("Carbs (g)") * multiplier).toFixed(1),
+            fat: (getVal("Fat (g)") * multiplier).toFixed(1),
+            quantity: multiplier, // Store quantity for reference
+            servingSize: selectedItemForQuant["Serving Size"],
+            // Store base values for future updates
+            baseCalories: getVal("Calories (kcal)"),
+            baseProtein: getVal("Protein (g)"),
+            baseCarbs: getVal("Carbs (g)"),
+            baseFat: getVal("Fat (g)")
         });
+
         setIsAddFoodOpen(false);
+        setSelectedItemForQuant(null);
+        setItemQuantity(1);
+        setSearchTerm('');
     };
 
 
@@ -209,7 +236,10 @@ export default function Dashboard() {
                             </div>
                             <div style={{ flex: 1 }}>
                                 <div style={{ fontWeight: '500', fontSize: '14px', color: '#1A1A1A' }}>{item.name}</div>
-                                <div style={{ fontSize: '12px', color: '#757575' }}>{item.calories} calories</div>
+                                <div style={{ fontSize: '12px', color: '#757575' }}>
+                                    {item.calories} cal
+                                    {item.servingSize && ` • ${(item.quantity || 1) !== 1 ? `${item.quantity}x ` : ''}${item.servingSize}`}
+                                </div>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <div style={{ width: '60px', height: '6px', background: '#F5F5F5', borderRadius: '3px', overflow: 'hidden' }}>
@@ -223,6 +253,34 @@ export default function Dashboard() {
                                     {user.goalCalories ? Math.round((item.calories / user.goalCalories) * 100) : 0}%
                                 </span>
                             </div>
+
+                            {/* Quantity Controls in List */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: '8px' }}>
+                                <button
+                                    onClick={() => updateFoodQuantity(type, idx, Math.max(0.5, (item.quantity || 1) - 0.5))}
+                                    style={{
+                                        border: '1px solid #E0E0E0', background: 'white', borderRadius: '4px',
+                                        width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        cursor: 'pointer', color: '#757575'
+                                    }}
+                                >
+                                    <Minus size={14} />
+                                </button>
+                                <span style={{ fontSize: '13px', fontWeight: '500', minWidth: '24px', textAlign: 'center' }}>
+                                    {item.quantity || 1}
+                                </span>
+                                <button
+                                    onClick={() => updateFoodQuantity(type, idx, (item.quantity || 1) + 0.5)}
+                                    style={{
+                                        border: '1px solid #2E7D32', background: '#E8F5E9', borderRadius: '4px',
+                                        width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        cursor: 'pointer', color: '#2E7D32'
+                                    }}
+                                >
+                                    <Plus size={14} />
+                                </button>
+                            </div>
+
                             <button
                                 onClick={() => removeFood(type, idx)}
                                 style={{
@@ -249,7 +307,7 @@ export default function Dashboard() {
                     No food logged for {title}.
                 </div>
             )}
-        </div>
+        </div >
     );
 
     return (
@@ -401,115 +459,213 @@ export default function Dashboard() {
                     }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                             <h3 style={{ fontSize: '18px', fontWeight: 'bold' }}>Add to {selectedMealType}</h3>
-                            <button onClick={() => setIsAddFoodOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+                            <button onClick={() => {
+                                setIsAddFoodOpen(false);
+                                setSelectedItemForQuant(null);
+                            }} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
                                 <X size={24} />
                             </button>
                         </div>
 
-                        <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            background: '#F5F5F5',
-                            borderRadius: '12px',
-                            padding: '12px',
-                            marginBottom: '20px'
-                        }}>
-                            <Search size={20} color="#757575" style={{ marginRight: '8px' }} />
-                            <input
-                                type="text"
-                                placeholder="Search food (e.g., Roti, Dal)"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                style={{
-                                    border: 'none',
-                                    background: 'transparent',
-                                    outline: 'none',
-                                    flex: 1,
-                                    fontSize: '16px'
-                                }}
-                                autoFocus
-                            />
-                        </div>
-
-                        {/* Active Filters Badge */}
-                        {(preferences.vegetarian || preferences.glutenFree || preferences.dairyFree || preferences.lowCarb) && (
-                            <div style={{
-                                display: 'flex',
-                                flexWrap: 'wrap',
-                                gap: '8px',
-                                marginBottom: '16px'
-                            }}>
-                                <span style={{ fontSize: '12px', color: '#757575', marginRight: '4px' }}>Filters:</span>
-                                {preferences.vegetarian && (
-                                    <span style={{
-                                        background: '#E8F5E9',
-                                        color: '#2E7D32',
-                                        padding: '4px 10px',
-                                        borderRadius: '12px',
-                                        fontSize: '12px',
-                                        fontWeight: '500'
-                                    }}>🌱 Vegetarian</span>
-                                )}
-                                {preferences.glutenFree && (
-                                    <span style={{
-                                        background: '#FFF3E0',
-                                        color: '#F57C00',
-                                        padding: '4px 10px',
-                                        borderRadius: '12px',
-                                        fontSize: '12px',
-                                        fontWeight: '500'
-                                    }}>🌾 Gluten Free</span>
-                                )}
-                                {preferences.dairyFree && (
-                                    <span style={{
-                                        background: '#E3F2FD',
-                                        color: '#1976D2',
-                                        padding: '4px 10px',
-                                        borderRadius: '12px',
-                                        fontSize: '12px',
-                                        fontWeight: '500'
-                                    }}>🥛 Dairy Free</span>
-                                )}
-                                {preferences.lowCarb && (
-                                    <span style={{
-                                        background: '#F3E5F5',
-                                        color: '#7B1FA2',
-                                        padding: '4px 10px',
-                                        borderRadius: '12px',
-                                        fontSize: '12px',
-                                        fontWeight: '500'
-                                    }}>⚡ Low Carb</span>
-                                )}
-                            </div>
-                        )}
-
-                        <div style={{ flex: 1, overflowY: 'auto' }}>
-                            {isSearching && (
-                                <div style={{ textAlign: 'center', color: '#757575', padding: '20px' }}>Searching...</div>
-                            )}
-                            {!isSearching && searchResults.map((item, idx) => (
-                                <div key={idx} onClick={() => handleAddFood(item)} style={{
-                                    padding: '16px 0',
-                                    borderBottom: '1px solid #EEEEEE',
-                                    cursor: 'pointer'
+                        {selectedItemForQuant ? (
+                            <div className="animate-scale-in" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                                <div style={{
+                                    background: '#F8F9FA',
+                                    borderRadius: '16px',
+                                    padding: '20px',
+                                    marginBottom: '24px',
+                                    textAlign: 'center'
                                 }}>
-                                    <div style={{ fontWeight: '600', marginBottom: '4px' }}>{item["Dish Name"]}</div>
-                                    <div style={{ fontSize: '14px', color: '#757575' }}>
-                                        {item["Calories (kcal)"]} cal • {item["Serving Size"]}
+                                    <div style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '8px', color: '#1A1A1A' }}>
+                                        {selectedItemForQuant["Dish Name"]}
+                                    </div>
+                                    <div style={{ color: '#757575', fontSize: '14px' }}>
+                                        {selectedItemForQuant["Calories (kcal)"]} cal per serving ({selectedItemForQuant["Serving Size"]})
                                     </div>
                                 </div>
-                            ))}
-                            {!isSearching && searchTerm.length > 2 && searchResults.length === 0 && (
-                                <div style={{ textAlign: 'center', color: '#9E9E9E', marginTop: '20px' }}>
-                                    No results found.
+
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '24px', marginBottom: '32px' }}>
+                                    <button
+                                        onClick={() => setItemQuantity(q => Math.max(0.5, q - 0.5))}
+                                        style={{
+                                            width: '48px', height: '48px', borderRadius: '12px', border: 'none',
+                                            background: '#EEEEEE', color: '#333', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            cursor: 'pointer', fontSize: '24px'
+                                        }}
+                                    >
+                                        <Minus size={24} />
+                                    </button>
+
+                                    <div style={{ textAlign: 'center', minWidth: '80px' }}>
+                                        <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#2E7D32' }}>{itemQuantity}</div>
+                                        <div style={{ fontSize: '12px', color: '#757575' }}>Servings</div>
+                                    </div>
+
+                                    <button
+                                        onClick={() => setItemQuantity(q => q + 0.5)}
+                                        style={{
+                                            width: '48px', height: '48px', borderRadius: '12px', border: 'none',
+                                            background: '#2E7D32', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            cursor: 'pointer'
+                                        }}
+                                    >
+                                        <Plus size={24} />
+                                    </button>
                                 </div>
-                            )}
-                            {!searchTerm && (
-                                <div style={{ textAlign: 'center', color: '#9E9E9E', marginTop: '20px' }}>
-                                    Type to search...
+
+                                <div style={{
+                                    background: '#E8F5E9',
+                                    borderRadius: '16px',
+                                    padding: '16px',
+                                    display: 'flex',
+                                    justifyContent: 'space-around',
+                                    marginBottom: 'auto'
+                                }}>
+                                    <div style={{ textAlign: 'center' }}>
+                                        <div style={{ fontWeight: 'bold', color: '#2E7D32' }}>{Math.round(selectedItemForQuant["Calories (kcal)"] * itemQuantity)}</div>
+                                        <div style={{ fontSize: '12px', color: '#4CAF50' }}>Calories</div>
+                                    </div>
+                                    <div style={{ textAlign: 'center' }}>
+                                        <div style={{ fontWeight: 'bold', color: '#2E7D32' }}>{(selectedItemForQuant["Protein (g)"] * itemQuantity).toFixed(1)}g</div>
+                                        <div style={{ fontSize: '12px', color: '#4CAF50' }}>Protein</div>
+                                    </div>
+                                    <div style={{ textAlign: 'center' }}>
+                                        <div style={{ fontWeight: 'bold', color: '#2E7D32' }}>{(selectedItemForQuant["Carbs (g)"] * itemQuantity).toFixed(1)}g</div>
+                                        <div style={{ fontSize: '12px', color: '#4CAF50' }}>Carbs</div>
+                                    </div>
                                 </div>
-                            )}
-                        </div>
+
+                                <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
+                                    <button
+                                        onClick={() => setSelectedItemForQuant(null)}
+                                        style={{
+                                            flex: 1, padding: '16px', borderRadius: '16px', border: 'none',
+                                            background: '#F5F5F5', color: '#757575', fontWeight: '600', cursor: 'pointer'
+                                        }}
+                                    >
+                                        Back
+                                    </button>
+                                    <button
+                                        onClick={confirmAddFood}
+                                        style={{
+                                            flex: 2, padding: '16px', borderRadius: '16px', border: 'none',
+                                            background: 'linear-gradient(135deg, #2E7D32 0%, #1B5E20 100%)',
+                                            color: 'white', fontWeight: 'bold', cursor: 'pointer',
+                                            boxShadow: '0 4px 12px rgba(46, 125, 50, 0.3)'
+                                        }}
+                                    >
+                                        Add Food
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <>
+                                <div style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    background: '#F5F5F5',
+                                    borderRadius: '12px',
+                                    padding: '12px',
+                                    marginBottom: '20px'
+                                }}>
+                                    <Search size={20} color="#757575" style={{ marginRight: '8px' }} />
+                                    <input
+                                        type="text"
+                                        placeholder="Search food (e.g., Roti, Dal)"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        style={{
+                                            border: 'none',
+                                            background: 'transparent',
+                                            outline: 'none',
+                                            flex: 1,
+                                            fontSize: '16px'
+                                        }}
+                                        autoFocus
+                                    />
+                                </div>
+
+                                {/* Active Filters Badge */}
+                                {(preferences.vegetarian || preferences.glutenFree || preferences.dairyFree || preferences.lowCarb) && (
+                                    <div style={{
+                                        display: 'flex',
+                                        flexWrap: 'wrap',
+                                        gap: '8px',
+                                        marginBottom: '16px'
+                                    }}>
+                                        <span style={{ fontSize: '12px', color: '#757575', marginRight: '4px' }}>Filters:</span>
+                                        {preferences.vegetarian && (
+                                            <span style={{
+                                                background: '#E8F5E9',
+                                                color: '#2E7D32',
+                                                padding: '4px 10px',
+                                                borderRadius: '12px',
+                                                fontSize: '12px',
+                                                fontWeight: '500'
+                                            }}>🌱 Vegetarian</span>
+                                        )}
+                                        {preferences.glutenFree && (
+                                            <span style={{
+                                                background: '#FFF3E0',
+                                                color: '#F57C00',
+                                                padding: '4px 10px',
+                                                borderRadius: '12px',
+                                                fontSize: '12px',
+                                                fontWeight: '500'
+                                            }}>🌾 Gluten Free</span>
+                                        )}
+                                        {preferences.dairyFree && (
+                                            <span style={{
+                                                background: '#E3F2FD',
+                                                color: '#1976D2',
+                                                padding: '4px 10px',
+                                                borderRadius: '12px',
+                                                fontSize: '12px',
+                                                fontWeight: '500'
+                                            }}>🥛 Dairy Free</span>
+                                        )}
+                                        {preferences.lowCarb && (
+                                            <span style={{
+                                                background: '#F3E5F5',
+                                                color: '#7B1FA2',
+                                                padding: '4px 10px',
+                                                borderRadius: '12px',
+                                                fontSize: '12px',
+                                                fontWeight: '500'
+                                            }}>⚡ Low Carb</span>
+                                        )}
+                                    </div>
+                                )}
+
+                                <div style={{ flex: 1, overflowY: 'auto' }}>
+                                    {isSearching && (
+                                        <div style={{ textAlign: 'center', color: '#757575', padding: '20px' }}>Searching...</div>
+                                    )}
+                                    {!isSearching && searchResults.map((item, idx) => (
+                                        <div key={idx} onClick={() => handleFoodClick(item)} style={{
+                                            padding: '16px 0',
+                                            borderBottom: '1px solid #EEEEEE',
+                                            cursor: 'pointer'
+                                        }}>
+                                            <div style={{ fontWeight: '600', marginBottom: '4px' }}>{item["Dish Name"]}</div>
+                                            <div style={{ fontSize: '14px', color: '#757575' }}>
+                                                {item["Calories (kcal)"]} cal • {item["Serving Size"]}
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {!isSearching && searchTerm.length > 2 && searchResults.length === 0 && (
+                                        <div style={{ textAlign: 'center', color: '#9E9E9E', marginTop: '20px' }}>
+                                            No results found.
+                                        </div>
+                                    )}
+                                    {!searchTerm && (
+                                        <div style={{ textAlign: 'center', color: '#9E9E9E', marginTop: '20px' }}>
+                                            Type to search...
+                                        </div>
+                                    )}
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
             )}

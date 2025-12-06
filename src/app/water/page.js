@@ -1,5 +1,6 @@
 "use client";
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import GoalSuccessModal from '../../components/GoalSuccessModal';
 import { Minus, Plus, Droplets, X } from 'lucide-react';
 import { Line } from 'react-chartjs-2';
 import {
@@ -26,11 +27,25 @@ ChartJS.register(
 );
 
 export default function Water() {
-    const { user, water, addWater, removeWater, dailyStats } = useUser();
+    const { user, water, addWater, removeWater, dailyStats, isLoading } = useUser();
     const [customAmount, setCustomAmount] = useState('');
+    const [isAdding, setIsAdding] = useState(false);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+    // Track state for popup logic
+    const wasGoalReachedRef = useRef(false);
+    const isFirstLoadRef = useRef(true);
+
+    // Calculate effective goal and max limit
+    const effectiveGoal = user.goalWater > 0 ? user.goalWater : 2000;
+    const maxWater = effectiveGoal * 1.5;
+    const isMaxReached = water.current >= maxWater;
 
     const handleAddWater = (amount) => {
+        if (isAdding || isMaxReached) return;
+        setIsAdding(true);
         addWater(amount);
+        setTimeout(() => setIsAdding(false), 500);
     };
 
     const handleCustomAdd = () => {
@@ -82,6 +97,10 @@ export default function Water() {
         ],
     };
 
+    // Dynamic Chart Max
+    const maxDataPoint = Math.max(...chartData.data);
+    const graphMax = Math.max(2500, maxDataPoint * 1.1); // Scale to data (min 2500), not forcing goal height
+
     const options = {
         responsive: true,
         maintainAspectRatio: false,
@@ -92,8 +111,8 @@ export default function Water() {
         scales: {
             y: {
                 beginAtZero: true,
-                max: 3500,
-                ticks: { stepSize: 500, color: '#9E9E9E', font: { size: 10 } },
+                suggestedMax: graphMax,
+                ticks: { color: '#9E9E9E', font: { size: 10 } }, // Auto step size
                 grid: { borderDash: [4, 4], color: '#EEEEEE' },
                 border: { display: false }
             },
@@ -105,7 +124,29 @@ export default function Water() {
         }
     };
 
-    const percentage = Math.min(100, Math.round((water.current / user.goalWater) * 100));
+    const percentage = Math.min(100, Math.round((water.current / effectiveGoal) * 100));
+    const displayPercentage = Math.round((water.current / effectiveGoal) * 100);
+
+    // Monitor for Goal Achievement
+    useEffect(() => {
+        if (isLoading) return;
+
+        const isGoalReached = water.current >= effectiveGoal;
+
+        if (isFirstLoadRef.current) {
+            // Sync ref on first load without triggering popup
+            wasGoalReachedRef.current = isGoalReached;
+            isFirstLoadRef.current = false;
+            return;
+        }
+
+        // Trigger popup if we just crossed the threshold
+        if (!wasGoalReachedRef.current && isGoalReached && water.current > 0) {
+            setShowSuccessModal(true);
+        }
+
+        wasGoalReachedRef.current = isGoalReached;
+    }, [water.current, effectiveGoal, isLoading]);
 
     return (
         <>
@@ -151,8 +192,8 @@ export default function Water() {
 
                         <div style={{ zIndex: 1, position: 'relative' }}>
                             <div style={{ fontSize: '36px', fontWeight: 'bold', textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>{water.current}</div>
-                            <div style={{ fontSize: '13px', opacity: 0.9, marginTop: '4px' }}>of {user.goalWater}ml</div>
-                            <div style={{ fontSize: '18px', fontWeight: '600', marginTop: '8px' }}>{percentage}%</div>
+                            <div style={{ fontSize: '13px', opacity: 0.9, marginTop: '4px' }}>of {effectiveGoal}ml</div>
+                            <div style={{ fontSize: '18px', fontWeight: '600', marginTop: '8px' }}>{displayPercentage}%</div>
                         </div>
                     </div>
 
@@ -167,17 +208,19 @@ export default function Water() {
                             <button
                                 key={amount}
                                 onClick={() => handleAddWater(amount)}
+                                disabled={isAdding || isMaxReached}
                                 style={{
                                     padding: '12px 8px',
                                     borderRadius: '12px',
-                                    background: 'rgba(255,255,255,0.2)',
-                                    color: 'white',
+                                    background: isAdding ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.2)',
+                                    color: isAdding ? 'rgba(255,255,255,0.5)' : 'white',
                                     border: '1px solid rgba(255,255,255,0.3)',
                                     fontWeight: '600',
                                     fontSize: '13px',
-                                    cursor: 'pointer',
+                                    cursor: (isAdding || isMaxReached) ? 'not-allowed' : 'pointer',
                                     transition: 'all 0.2s',
-                                    backdropFilter: 'blur(10px)'
+                                    backdropFilter: 'blur(10px)',
+                                    opacity: isMaxReached ? 0.5 : 1
                                 }}
                                 onMouseOver={(e) => e.target.style.background = 'rgba(255,255,255,0.3)'}
                                 onMouseOut={(e) => e.target.style.background = 'rgba(255,255,255,0.2)'}
@@ -214,11 +257,12 @@ export default function Water() {
                         />
                         <button
                             onClick={handleCustomAdd}
+                            disabled={isAdding || isMaxReached}
                             style={{
                                 padding: '12px 16px',
                                 borderRadius: '12px',
-                                background: 'rgba(255,255,255,0.95)',
-                                color: '#2962FF',
+                                background: isAdding ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.95)',
+                                color: isAdding ? '#90CAF9' : '#2962FF',
                                 border: 'none',
                                 fontWeight: '700',
                                 fontSize: '14px',
@@ -226,13 +270,14 @@ export default function Water() {
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 gap: '6px',
-                                cursor: 'pointer',
+                                cursor: (isAdding || isMaxReached) ? 'not-allowed' : 'pointer',
                                 transition: 'all 0.2s',
                                 whiteSpace: 'nowrap',
-                                flexShrink: 0
+                                flexShrink: 0,
+                                opacity: isMaxReached ? 0.5 : 1
                             }}
                         >
-                            <Plus size={18} /> Add
+                            <Plus size={18} /> {isAdding ? '...' : (isMaxReached ? 'Max' : 'Add')}
                         </button>
                     </div>
                 </div>
@@ -333,6 +378,10 @@ export default function Water() {
                     </div>
                 </div>
             </div>
+            <GoalSuccessModal
+                isOpen={showSuccessModal}
+                onClose={() => setShowSuccessModal(false)}
+            />
             <BottomNav />
         </>
     );

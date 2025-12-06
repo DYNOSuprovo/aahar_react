@@ -154,20 +154,40 @@ export function UserProvider({ children }) {
             });
         } else {
             // Same Day
-            setWater(prev => ({
-                current: Math.min(prev.current + amount, user.goalWater * 1.5),
-                history: [{ amount, time }, ...prev.history]
-            }));
+            setWater(prev => {
+                // Use a default goal of 2000ml if user.goalWater is 0 to prevent capping at 0
+                const effectiveGoal = user.goalWater > 0 ? user.goalWater : 2000;
+                const maxWater = effectiveGoal * 1.5;
+
+                // Smart Cap: If history sum is already at max, prevent further logs
+                const currentTotal = prev.history.reduce((sum, item) => sum + item.amount, 0);
+                if (currentTotal >= maxWater) {
+                    return prev;
+                }
+
+                const newHistory = [{ amount, time }, ...prev.history];
+                const totalHistory = newHistory.reduce((sum, item) => sum + item.amount, 0);
+
+                return {
+                    current: Math.min(totalHistory, maxWater),
+                    history: newHistory
+                };
+            });
         }
     };
 
     const removeWater = (index) => {
         setWater(prev => {
-            const removedAmount = prev.history[index].amount;
-            const newCurrent = Math.max(0, prev.current - removedAmount);
+            const newHistory = prev.history.filter((_, i) => i !== index);
+            const totalHistory = newHistory.reduce((sum, item) => sum + item.amount, 0);
+
+            // Recalculate max water limit
+            const effectiveGoal = user.goalWater > 0 ? user.goalWater : 2000;
+            const maxWater = effectiveGoal * 1.5;
+
             return {
-                current: newCurrent,
-                history: prev.history.filter((_, i) => i !== index)
+                current: Math.min(totalHistory, maxWater),
+                history: newHistory
             };
         });
     };
@@ -195,6 +215,44 @@ export function UserProvider({ children }) {
         setMeals(prev => ({
             ...prev,
             [mealType]: prev[mealType].filter((_, i) => i !== index)
+        }));
+    };
+
+    const updateFoodQuantity = (mealType, index, newQuantity) => {
+        setMeals(prev => {
+            const newList = [...prev[mealType]];
+            const item = newList[index];
+
+            // If we don't have base values, we might be limited, 
+            // but we can try to derive or just update if we ensured base values are stored.
+            // For robustness, let's assume we will update the structure to store base values.
+            // If base values missing, assume current is for quantity 1 (fallback).
+
+            const baseCalories = item.baseCalories || (item.quantity ? item.calories / item.quantity : item.calories);
+            const baseProtein = item.baseProtein || (item.quantity ? item.protein / item.quantity : item.protein);
+            const baseCarbs = item.baseCarbs || (item.quantity ? item.carbs / item.quantity : item.carbs);
+            const baseFat = item.baseFat || (item.quantity ? item.fat / item.quantity : item.fat);
+
+            newList[index] = {
+                ...item,
+                quantity: newQuantity,
+                calories: Math.round(baseCalories * newQuantity),
+                protein: (baseProtein * newQuantity).toFixed(1),
+                carbs: (baseCarbs * newQuantity).toFixed(1),
+                fat: (baseFat * newQuantity).toFixed(1)
+            };
+
+            return {
+                ...prev,
+                [mealType]: newList
+            };
+        });
+    };
+
+    const clearMeal = (mealType) => {
+        setMeals(prev => ({
+            ...prev,
+            [mealType]: []
         }));
     };
 
@@ -236,6 +294,8 @@ export function UserProvider({ children }) {
             removeWater,
             addFood,
             removeFood,
+            updateFoodQuantity,
+            clearMeal,
             updateProfile,
             togglePreference,
             completeOnboarding,
