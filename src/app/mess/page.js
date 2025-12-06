@@ -374,10 +374,10 @@ export default function Mess() {
             <div style={{ background: '#FAFAFA', minHeight: '100vh' }}>
                 <div style={{ maxWidth: '600px', margin: '0 auto', padding: '20px', paddingBottom: '80px' }}>
                     {/* Header */}
-                    <div style={{ marginBottom: '20px' }}>
-                        <h1 style={{ fontSize: '22px', fontWeight: 'bold', color: '#333', marginBottom: '6px' }}>Mess Menu</h1>
+                    <div style={{ marginBottom: '8px' }}>
+                        <h1 style={{ fontSize: '22px', fontWeight: 'bold', color: '#1A1A1A', marginBottom: '4px' }}>Mess Menu</h1>
                         <p style={{ fontSize: '14px', color: '#757575' }}>
-                            {new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' })}
+                            Select a day to view the menu. Booking is only available for today.
                         </p>
                     </div>
 
@@ -391,28 +391,31 @@ export default function Mess() {
                                     key={day}
                                     onClick={() => setSelectedDay(index)}
                                     style={{
-                                        padding: '8px 16px',
-                                        borderRadius: '20px',
-                                        border: 'none',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        padding: '10px 14px',
+                                        borderRadius: '12px',
+                                        border: isSelected ? 'none' : '1px solid #E0E0E0',
                                         background: isSelected ? '#2E7D32' : 'white',
                                         color: isSelected ? 'white' : '#757575',
-                                        fontWeight: '600',
-                                        fontWeight: isSelected ? '600' : '500',
-                                        boxShadow: isSelected ? '0 4px 10px rgba(46, 125, 50, 0.3)' : '0 2px 4px rgba(0,0,0,0.05)',
                                         flexShrink: 0,
-                                        fontSize: '14px',
-                                        position: 'relative'
+                                        minWidth: '52px',
+                                        position: 'relative',
+                                        cursor: 'pointer'
                                     }}
                                 >
-                                    {day}
-                                    {isTodayDay && <span style={{ position: 'absolute', top: '4px', right: '6px', width: '6px', height: '6px', background: isSelected ? '#A5D6A7' : '#2E7D32', borderRadius: '50%' }}></span>}
+                                    <span style={{ fontSize: '12px', fontWeight: '500', marginBottom: '2px' }}>{day}</span>
+                                    <span style={{ fontSize: '18px', fontWeight: '700' }}>{dates[index]}</span>
+                                    {isTodayDay && <span style={{ position: 'absolute', bottom: '6px', left: '50%', transform: 'translateX(-50%)', width: '4px', height: '4px', background: isSelected ? 'white' : '#2E7D32', borderRadius: '50%' }}></span>}
                                 </button>
                             );
                         })}
                     </div>
 
                     {/* Meal Type Selector */}
-                    <div style={{ background: 'white', padding: '4px', borderRadius: '16px', display: 'flex', marginBottom: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+                    <div style={{ background: 'white', padding: '4px', borderRadius: '30px', display: 'flex', marginBottom: '24px', border: '1px solid #E0E0E0' }}>
                         {['breakfast', 'lunch', 'snack', 'dinner'].map((meal) => (
                             <button
                                 key={meal}
@@ -420,32 +423,35 @@ export default function Mess() {
                                 style={{
                                     flex: 1,
                                     padding: '10px',
-                                    borderRadius: '12px',
+                                    borderRadius: '26px',
                                     border: 'none',
-                                    background: selectedMeal === meal ? '#E8F5E9' : 'transparent',
-                                    color: selectedMeal === meal ? '#2E7D32' : '#757575',
-                                    startCase: true,
+                                    background: selectedMeal === meal ? '#2E7D32' : 'transparent',
+                                    color: selectedMeal === meal ? 'white' : '#757575',
                                     fontWeight: '600',
                                     textTransform: 'capitalize',
-                                    fontSize: '14px'
+                                    fontSize: '14px',
+                                    cursor: 'pointer'
                                 }}
                             >
-                                {meal}
+                                {meal.charAt(0).toUpperCase() + meal.slice(1)}
                             </button>
                         ))}
                     </div>
 
                     {/* Menu Items */}
                     <div className="animate-slide-up">
-                        <h2 style={{ fontSize: '18px', fontWeight: 'Bold', color: '#333', marginBottom: '16px' }}>
-                            {selectedMeal.charAt(0).toUpperCase() + selectedMeal.slice(1)} Menu
+                        <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#1A1A1A', marginBottom: '16px' }}>
+                            Select Items to Eat
                         </h2>
 
+                        {/* Staples First */}
+                        <div style={{ marginBottom: '24px' }}>
+                            {currentMenu.staples.map(renderStapleCounter)}
+                        </div>
+
+                        {/* Specials After */}
                         {dailySpecial && (
-                            <div style={{ marginBottom: '24px' }}>
-                                <div style={{ fontSize: '12px', fontWeight: '600', color: '#757575', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                    Today's Special
-                                </div>
+                            <div>
                                 {(dailySpecial.type === 'choice' || dailySpecial.type === 'special') ? (
                                     <>
                                         {renderMainItem(dailySpecial.veg)}
@@ -458,50 +464,36 @@ export default function Mess() {
                                 )}
                             </div>
                         )}
-
-                        <div>
-                            <div style={{ fontSize: '12px', fontWeight: '600', color: '#757575', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                Daily Staples
-                            </div>
-                            {currentMenu.staples.map(renderStapleCounter)}
-                        </div>
                     </div>
-                </div>
 
-                {/* Bottom Floating Action Button */}
-                <div style={{
-                    position: 'sticky',
-                    bottom: '90px',
-                    width: '100%',
-                    zIndex: 100,
-                    marginTop: '20px'
-                }}>
-                    <button
-                        onClick={handleConfirmMeal}
-                        disabled={!hasSelection}
-                        style={{
-                            width: '100%',
-                            padding: '16px',
-                            background: hasSelection ? '#2E7D32' : (isBooked ? '#E8F5E9' : '#BDBDBD'),
-                            color: hasSelection ? 'white' : (isBooked ? '#2E7D32' : 'white'),
-                            border: 'none',
-                            borderRadius: '16px',
-                            fontWeight: 'bold',
-                            fontSize: '16px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '8px',
-                            boxShadow: hasSelection ? '0 4px 15px rgba(46, 125, 50, 0.4)' : 'none',
-                            cursor: hasSelection ? 'pointer' : 'not-allowed',
-                            transition: 'all 0.3s'
-                        }}
-                    >
-                        {isBooked && !hasSelection ?
-                            <><Check size={20} /> Meal Logged Successfully!</> :
-                            (hasSelection ? 'Log Selected Items' : 'Select items to log')
-                        }
-                    </button>
+                    {/* Bottom Action Button */}
+                    <div style={{ marginTop: '24px', paddingBottom: '100px' }}>
+                        <button
+                            onClick={handleConfirmMeal}
+                            disabled={!hasSelection && !isBooked}
+                            style={{
+                                width: '100%',
+                                padding: '16px',
+                                background: hasSelection ? '#2E7D32' : (isBooked ? '#E8F5E9' : '#2E7D32'),
+                                color: hasSelection ? 'white' : (isBooked ? '#2E7D32' : 'white'),
+                                border: 'none',
+                                borderRadius: '30px',
+                                fontWeight: '600',
+                                fontSize: '16px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '8px',
+                                cursor: hasSelection ? 'pointer' : (isBooked ? 'default' : 'pointer'),
+                                transition: 'all 0.3s'
+                            }}
+                        >
+                            {isBooked && !hasSelection ?
+                                <><Check size={20} /> Meal Logged Successfully!</> :
+                                <><Utensils size={20} /> Log Meal</>
+                            }
+                        </button>
+                    </div>
                 </div>
             </div>
             <BottomNav />
