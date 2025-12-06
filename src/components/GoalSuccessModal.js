@@ -69,14 +69,14 @@ export default function GoalSuccessModal({ isOpen, onClose }) {
                     justifyContent: 'center',
                     margin: '0 auto 24px auto'
                 }}>
-                    <Trophy size={40} color="#2E7D32" />
+                    <Trophy size={40} color="#1DB954" />
                 </div>
 
                 {/* Title */}
                 <h2 style={{
                     fontSize: '24px',
                     fontWeight: '800',
-                    color: '#2E7D32',
+                    color: '#1DB954',
                     marginBottom: '12px'
                 }}>
                     Congratulations!

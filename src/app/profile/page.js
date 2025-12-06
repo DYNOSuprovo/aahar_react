@@ -94,12 +94,12 @@ export default function Profile() {
             {
                 label: 'Weight (kg)',
                 data: chartData.data,
-                borderColor: '#2E7D32',
+                borderColor: '#1DB954',
                 backgroundColor: 'rgba(46, 125, 50, 0.1)',
                 fill: true,
                 tension: 0.4,
                 pointRadius: 4,
-                pointBackgroundColor: '#2E7D32',
+                pointBackgroundColor: '#1DB954',
             },
         ],
     };
@@ -144,7 +144,7 @@ export default function Profile() {
                                         padding: '8px',
                                         borderRadius: '50%',
                                         background: '#E8F5E9',
-                                        color: '#2E7D32',
+                                        color: '#1DB954',
                                         border: 'none',
                                         cursor: 'pointer'
                                     }}
@@ -200,7 +200,7 @@ export default function Profile() {
                             position: 'absolute',
                             bottom: '0',
                             right: '0',
-                            background: '#2E7D32',
+                            background: '#1DB954',
                             borderRadius: '50%',
                             padding: '6px',
                             border: '2px solid white'
@@ -254,7 +254,7 @@ export default function Profile() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
                     {/* Weight */}
                     <div style={{ background: 'white', borderRadius: '16px', padding: '16px', textAlign: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-                        <Scale size={24} color="#2E7D32" style={{ marginBottom: '8px' }} />
+                        <Scale size={24} color="#1DB954" style={{ marginBottom: '8px' }} />
                         {isEditing ? (
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
                                 <input
@@ -276,7 +276,7 @@ export default function Profile() {
 
                     {/* BMI (Calculated) */}
                     <div style={{ background: 'white', borderRadius: '16px', padding: '16px', textAlign: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-                        <Activity size={24} color="#2E7D32" style={{ marginBottom: '8px' }} />
+                        <Activity size={24} color="#1DB954" style={{ marginBottom: '8px' }} />
                         <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#333' }}>
                             {isEditing ? ((formData.weight / ((formData.height / 100) ** 2)).toFixed(1)) : user.bmi}
                         </div>
@@ -348,7 +348,7 @@ export default function Profile() {
                                 style={{
                                     width: '44px',
                                     height: '24px',
-                                    background: value ? '#2E7D32' : '#E0E0E0',
+                                    background: value ? '#1DB954' : '#E0E0E0',
                                     borderRadius: '12px',
                                     position: 'relative',
                                     cursor: 'pointer',

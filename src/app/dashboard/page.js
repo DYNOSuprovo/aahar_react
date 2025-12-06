@@ -3,6 +3,7 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useUser } from '../../context/UserContext';
 import { ChevronLeft, ChevronRight, Calendar, Plus, Minus, Search, X, Utensils, Trash2 } from 'lucide-react';
 import { searchFood, analyzeMeal } from '../../lib/api';
+import { SlideUp, FadeIn, ScaleIn } from '../../components/Animations';
 
 const CountUp = ({ end, duration = 1500 }) => {
     const [count, setCount] = useState(0);
@@ -197,7 +198,7 @@ export default function Dashboard() {
                     style={{
                         background: 'none',
                         border: 'none',
-                        color: '#2E7D32',
+                        color: '#1DB954',
                         fontWeight: '600',
                         fontSize: '14px',
                         display: 'flex',
@@ -246,7 +247,7 @@ export default function Dashboard() {
                                     <div style={{
                                         width: `${user.goalCalories ? Math.min(100, (item.calories / user.goalCalories) * 100) : 0}%`,
                                         height: '100%',
-                                        background: '#2E7D32'
+                                        background: '#1DB954'
                                     }}></div>
                                 </div>
                                 <span style={{ fontSize: '12px', color: '#757575', width: '30px', textAlign: 'right' }}>
@@ -272,9 +273,9 @@ export default function Dashboard() {
                                 <button
                                     onClick={() => updateFoodQuantity(type, idx, (item.quantity || 1) + 0.5)}
                                     style={{
-                                        border: '1px solid #2E7D32', background: '#E8F5E9', borderRadius: '4px',
+                                        border: '1px solid #1DB954', background: '#E8F5E9', borderRadius: '4px',
                                         width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        cursor: 'pointer', color: '#2E7D32'
+                                        cursor: 'pointer', color: '#1DB954'
                                     }}
                                 >
                                     <Plus size={14} />
@@ -313,128 +314,136 @@ export default function Dashboard() {
     return (
         <div style={{ padding: '20px', paddingBottom: '80px', background: 'white', minHeight: '100vh' }}>
             {/* Header */}
-            <div className="animate-slide-up" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                <ChevronLeft size={24} color="#757575" cursor="pointer" />
-                <h1 style={{ fontSize: '18px', fontWeight: 'bold' }}>Today</h1>
-                <div style={{ display: 'flex', gap: '16px' }}>
-                    <ChevronRight size={24} color="#757575" cursor="pointer" />
-                    <Calendar size={24} color="#757575" cursor="pointer" />
+            <SlideUp delay={0}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                    <ChevronLeft size={24} color="#757575" cursor="pointer" />
+                    <h1 style={{ fontSize: '18px', fontWeight: 'bold' }}>Today</h1>
+                    <div style={{ display: 'flex', gap: '16px' }}>
+                        <ChevronRight size={24} color="#757575" cursor="pointer" />
+                        <Calendar size={24} color="#757575" cursor="pointer" />
+                    </div>
                 </div>
-            </div>
+            </SlideUp>
 
             {/* Calories Progress */}
-            <div className="animate-slide-up delay-100" style={{ marginBottom: '32px' }}>
-                <h2 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px', color: '#1A1A1A' }}>Calories Progress</h2>
-                <div className="card" style={{ display: 'flex', justifyContent: 'space-between', textAlign: 'center', padding: '24px' }}>
-                    <div>
-                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1A1A1A' }}>
-                            <CountUp end={user.goalCalories} />
+            <SlideUp delay={0.1}>
+                <div style={{ marginBottom: '32px' }}>
+                    <h2 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px', color: '#1A1A1A' }}>Calories Progress</h2>
+                    <div className="card" style={{ display: 'flex', justifyContent: 'space-between', textAlign: 'center', padding: '24px' }}>
+                        <div>
+                            <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1A1A1A' }}>
+                                <CountUp end={user.goalCalories} />
+                            </div>
+                            <div style={{ fontSize: '13px', color: '#757575', marginTop: '4px' }}>Goal</div>
                         </div>
-                        <div style={{ fontSize: '13px', color: '#757575', marginTop: '4px' }}>Goal</div>
-                    </div>
-                    <div style={{ width: '1px', background: '#EEEEEE' }}></div>
-                    <div>
-                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#2E7D32' }}>
-                            <CountUp end={totalCalories} />
+                        <div style={{ width: '1px', background: '#EEEEEE' }}></div>
+                        <div>
+                            <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1DB954' }}>
+                                <CountUp end={totalCalories} />
+                            </div>
+                            <div style={{ fontSize: '13px', color: '#757575', marginTop: '4px' }}>Logged</div>
                         </div>
-                        <div style={{ fontSize: '13px', color: '#757575', marginTop: '4px' }}>Logged</div>
-                    </div>
-                    <div style={{ width: '1px', background: '#EEEEEE' }}></div>
-                    <div>
-                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: remainingCalories < 0 ? '#D32F2F' : '#1A1A1A' }}>
-                            {remainingCalories}
+                        <div style={{ width: '1px', background: '#EEEEEE' }}></div>
+                        <div>
+                            <div style={{ fontSize: '24px', fontWeight: 'bold', color: remainingCalories < 0 ? '#D32F2F' : '#1A1A1A' }}>
+                                {remainingCalories}
+                            </div>
+                            <div style={{ fontSize: '13px', color: '#757575', marginTop: '4px' }}>Remaining</div>
                         </div>
-                        <div style={{ fontSize: '13px', color: '#757575', marginTop: '4px' }}>Remaining</div>
                     </div>
                 </div>
-            </div>
+            </SlideUp>
 
             {/* Macronutrients */}
-            <div className="animate-slide-up delay-200" style={{ marginBottom: '32px' }}>
-                <h2 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px', color: '#1A1A1A' }}>Macronutrients</h2>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    {/* Fat */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <span style={{ width: '50px', fontSize: '14px', fontWeight: '500' }}>Fat</span>
-                        <div style={{ flex: 1, height: '8px', background: '#F5F5F5', borderRadius: '4px', overflow: 'hidden' }}>
-                            <div style={{ width: `${Math.min(100, (totalFat / 70) * 100)}%`, height: '100%', background: '#2E7D32', transition: 'width 1s ease-out' }}></div>
+            <SlideUp delay={0.2}>
+                <div style={{ marginBottom: '32px' }}>
+                    <h2 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px', color: '#1A1A1A' }}>Macronutrients</h2>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        {/* Fat */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <span style={{ width: '50px', fontSize: '14px', fontWeight: '500' }}>Fat</span>
+                            <div style={{ flex: 1, height: '8px', background: '#F5F5F5', borderRadius: '4px', overflow: 'hidden' }}>
+                                <div style={{ width: `${Math.min(100, (totalFat / 70) * 100)}%`, height: '100%', background: '#1DB954', transition: 'width 1s ease-out' }}></div>
+                            </div>
+                            <span style={{ fontSize: '12px', color: '#757575', width: '60px', textAlign: 'right' }}>{totalFat} / 70 g</span>
                         </div>
-                        <span style={{ fontSize: '12px', color: '#757575', width: '60px', textAlign: 'right' }}>{totalFat} / 70 g</span>
-                    </div>
-                    {/* Carbs */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <span style={{ width: '50px', fontSize: '14px', fontWeight: '500' }}>Carbs</span>
-                        <div style={{ flex: 1, height: '8px', background: '#F5F5F5', borderRadius: '4px', overflow: 'hidden' }}>
-                            <div style={{ width: `${Math.min(100, (totalCarbs / 275) * 100)}%`, height: '100%', background: '#2E7D32', transition: 'width 1s ease-out' }}></div>
+                        {/* Carbs */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <span style={{ width: '50px', fontSize: '14px', fontWeight: '500' }}>Carbs</span>
+                            <div style={{ flex: 1, height: '8px', background: '#F5F5F5', borderRadius: '4px', overflow: 'hidden' }}>
+                                <div style={{ width: `${Math.min(100, (totalCarbs / 275) * 100)}%`, height: '100%', background: '#1DB954', transition: 'width 1s ease-out' }}></div>
+                            </div>
+                            <span style={{ fontSize: '12px', color: '#757575', width: '60px', textAlign: 'right' }}>{totalCarbs} / 275 g</span>
                         </div>
-                        <span style={{ fontSize: '12px', color: '#757575', width: '60px', textAlign: 'right' }}>{totalCarbs} / 275 g</span>
-                    </div>
-                    {/* Protein */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <span style={{ width: '50px', fontSize: '14px', fontWeight: '500' }}>Protein</span>
-                        <div style={{ flex: 1, height: '8px', background: '#F5F5F5', borderRadius: '4px', overflow: 'hidden' }}>
-                            <div style={{ width: `${Math.min(100, (totalProtein / 100) * 100)}%`, height: '100%', background: '#2E7D32', transition: 'width 1s ease-out' }}></div>
+                        {/* Protein */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <span style={{ width: '50px', fontSize: '14px', fontWeight: '500' }}>Protein</span>
+                            <div style={{ flex: 1, height: '8px', background: '#F5F5F5', borderRadius: '4px', overflow: 'hidden' }}>
+                                <div style={{ width: `${Math.min(100, (totalProtein / 100) * 100)}%`, height: '100%', background: '#1DB954', transition: 'width 1s ease-out' }}></div>
+                            </div>
+                            <span style={{ fontSize: '12px', color: '#757575', width: '60px', textAlign: 'right' }}>{totalProtein} / 100 g</span>
                         </div>
-                        <span style={{ fontSize: '12px', color: '#757575', width: '60px', textAlign: 'right' }}>{totalProtein} / 100 g</span>
                     </div>
                 </div>
-            </div>
+            </SlideUp>
 
             {/* Meals */}
-            <div className="animate-slide-up delay-300">
+            <SlideUp delay={0.3}>
                 <MealSection title="Breakfast" items={meals.breakfast} type="breakfast" />
                 <MealSection title="Lunch" items={meals.lunch} type="lunch" />
                 <MealSection title="Snack" items={meals.snack} type="snack" />
                 <MealSection title="Dinner" items={meals.dinner} type="dinner" />
-            </div>
+            </SlideUp>
 
             {/* AI Analysis Section */}
-            <div className="animate-slide-up delay-300" style={{ marginTop: '32px', marginBottom: '24px' }}>
-                <button
-                    onClick={handleAnalyze}
-                    disabled={isAnalyzing}
-                    className="btn-interactive"
-                    style={{
-                        width: '100%',
-                        padding: '16px',
-                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '16px',
-                        fontWeight: 'bold',
-                        fontSize: '16px',
-                        cursor: isAnalyzing ? 'wait' : 'pointer',
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        gap: '8px',
-                        boxShadow: '0 4px 15px rgba(118, 75, 162, 0.3)'
-                    }}
-                >
-                    {isAnalyzing ? 'Analyzing...' : (
-                        <>
-                            <span>✨</span> Analyze Daily Intake
-                        </>
-                    )}
-                </button>
+            <SlideUp delay={0.4}>
+                <div style={{ marginTop: '32px', marginBottom: '24px' }}>
+                    <button
+                        onClick={handleAnalyze}
+                        disabled={isAnalyzing}
+                        className="btn-interactive"
+                        style={{
+                            width: '100%',
+                            padding: '16px',
+                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '16px',
+                            fontWeight: 'bold',
+                            fontSize: '16px',
+                            cursor: isAnalyzing ? 'wait' : 'pointer',
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            gap: '8px',
+                            boxShadow: '0 4px 15px rgba(118, 75, 162, 0.3)'
+                        }}
+                    >
+                        {isAnalyzing ? 'Analyzing...' : (
+                            <>
+                                <span>✨</span> Analyze Daily Intake
+                            </>
+                        )}
+                    </button>
 
-                {analysis && (
-                    <div style={{
-                        marginTop: '16px',
-                        padding: '20px',
-                        background: '#F3E5F5',
-                        borderRadius: '16px',
-                        border: '1px solid #E1BEE7',
-                        color: '#4A148C',
-                        lineHeight: '1.5'
-                    }}>
-                        <h3 style={{ fontWeight: 'bold', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span>🤖</span> AaharAI Insights
-                        </h3>
-                        <p style={{ fontSize: '14px' }}>{analysis}</p>
-                    </div>
-                )}
-            </div>
+                    {analysis && (
+                        <div style={{
+                            marginTop: '16px',
+                            padding: '20px',
+                            background: '#F3E5F5',
+                            borderRadius: '16px',
+                            border: '1px solid #E1BEE7',
+                            color: '#4A148C',
+                            lineHeight: '1.5'
+                        }}>
+                            <h3 style={{ fontWeight: 'bold', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span>🤖</span> AaharAI Insights
+                            </h3>
+                            <p style={{ fontSize: '14px' }}>{analysis}</p>
+                        </div>
+                    )}
+                </div>
+            </SlideUp>
 
             {/* Add Food Modal */}
             {isAddFoodOpen && (
@@ -497,7 +506,7 @@ export default function Dashboard() {
                                     </button>
 
                                     <div style={{ textAlign: 'center', minWidth: '80px' }}>
-                                        <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#2E7D32' }}>{itemQuantity}</div>
+                                        <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#1DB954' }}>{itemQuantity}</div>
                                         <div style={{ fontSize: '12px', color: '#757575' }}>Servings</div>
                                     </div>
 
@@ -505,7 +514,7 @@ export default function Dashboard() {
                                         onClick={() => setItemQuantity(q => q + 0.5)}
                                         style={{
                                             width: '48px', height: '48px', borderRadius: '12px', border: 'none',
-                                            background: '#2E7D32', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            background: '#1DB954', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
                                             cursor: 'pointer'
                                         }}
                                     >
@@ -522,15 +531,15 @@ export default function Dashboard() {
                                     marginBottom: 'auto'
                                 }}>
                                     <div style={{ textAlign: 'center' }}>
-                                        <div style={{ fontWeight: 'bold', color: '#2E7D32' }}>{Math.round(selectedItemForQuant["Calories (kcal)"] * itemQuantity)}</div>
+                                        <div style={{ fontWeight: 'bold', color: '#1DB954' }}>{Math.round(selectedItemForQuant["Calories (kcal)"] * itemQuantity)}</div>
                                         <div style={{ fontSize: '12px', color: '#4CAF50' }}>Calories</div>
                                     </div>
                                     <div style={{ textAlign: 'center' }}>
-                                        <div style={{ fontWeight: 'bold', color: '#2E7D32' }}>{(selectedItemForQuant["Protein (g)"] * itemQuantity).toFixed(1)}g</div>
+                                        <div style={{ fontWeight: 'bold', color: '#1DB954' }}>{(selectedItemForQuant["Protein (g)"] * itemQuantity).toFixed(1)}g</div>
                                         <div style={{ fontSize: '12px', color: '#4CAF50' }}>Protein</div>
                                     </div>
                                     <div style={{ textAlign: 'center' }}>
-                                        <div style={{ fontWeight: 'bold', color: '#2E7D32' }}>{(selectedItemForQuant["Carbs (g)"] * itemQuantity).toFixed(1)}g</div>
+                                        <div style={{ fontWeight: 'bold', color: '#1DB954' }}>{(selectedItemForQuant["Carbs (g)"] * itemQuantity).toFixed(1)}g</div>
                                         <div style={{ fontSize: '12px', color: '#4CAF50' }}>Carbs</div>
                                     </div>
                                 </div>
@@ -549,7 +558,7 @@ export default function Dashboard() {
                                         onClick={confirmAddFood}
                                         style={{
                                             flex: 2, padding: '16px', borderRadius: '16px', border: 'none',
-                                            background: 'linear-gradient(135deg, #2E7D32 0%, #1B5E20 100%)',
+                                            background: 'linear-gradient(135deg, #1DB954 0%, #1B5E20 100%)',
                                             color: 'white', fontWeight: 'bold', cursor: 'pointer',
                                             boxShadow: '0 4px 12px rgba(46, 125, 50, 0.3)'
                                         }}
@@ -597,7 +606,7 @@ export default function Dashboard() {
                                         {preferences.vegetarian && (
                                             <span style={{
                                                 background: '#E8F5E9',
-                                                color: '#2E7D32',
+                                                color: '#1DB954',
                                                 padding: '4px 10px',
                                                 borderRadius: '12px',
                                                 fontSize: '12px',

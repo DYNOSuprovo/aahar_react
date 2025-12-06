@@ -167,7 +167,7 @@ export default function Login() {
                         padding: '14px',
                         borderRadius: '12px',
                         border: 'none',
-                        background: 'linear-gradient(135deg, #2E7D32 0%, #43A047 100%)',
+                        background: 'linear-gradient(135deg, #1DB954 0%, #43A047 100%)',
                         color: 'white',
                         fontWeight: 'bold',
                         cursor: 'pointer',

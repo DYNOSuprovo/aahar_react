@@ -135,7 +135,7 @@ export default function Onboarding() {
 
             {/* Progress Bar */}
             <div style={{ marginBottom: '40px', marginTop: '40px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', color: '#2E7D32', fontWeight: '600' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', color: '#1DB954', fontWeight: '600' }}>
                     <span>Step {step} of {totalSteps}</span>
                     <span>{Math.round((step / totalSteps) * 100)}%</span>
                 </div>
@@ -143,7 +143,7 @@ export default function Onboarding() {
                     <div style={{
                         height: '100%',
                         width: `${(step / totalSteps) * 100}%`,
-                        background: '#2E7D32',
+                        background: '#1DB954',
                         transition: 'width 0.3s ease'
                     }} />
                 </div>
@@ -271,7 +271,7 @@ export default function Onboarding() {
                                     style={{
                                         padding: '16px',
                                         borderRadius: '12px',
-                                        border: formData.activityLevel === option.value ? '2px solid #2E7D32' : '1px solid #E0E0E0',
+                                        border: formData.activityLevel === option.value ? '2px solid #1DB954' : '1px solid #E0E0E0',
                                         background: formData.activityLevel === option.value ? '#E8F5E9' : 'white',
                                         cursor: 'pointer',
                                         display: 'flex',
@@ -283,7 +283,7 @@ export default function Onboarding() {
                                         <div style={{ fontWeight: '600', color: '#333' }}>{option.label}</div>
                                         <div style={{ fontSize: '12px', color: '#757575' }}>{option.desc}</div>
                                     </div>
-                                    {formData.activityLevel === option.value && <Check size={20} color="#2E7D32" />}
+                                    {formData.activityLevel === option.value && <Check size={20} color="#1DB954" />}
                                 </div>
                             ))}
                         </div>
@@ -321,7 +321,7 @@ export default function Onboarding() {
                         padding: '16px',
                         borderRadius: '12px',
                         border: 'none',
-                        background: isValid ? 'linear-gradient(135deg, #2E7D32 0%, #1B5E20 100%)' : '#E0E0E0',
+                        background: isValid ? 'linear-gradient(135deg, #1DB954 0%, #1B5E20 100%)' : '#E0E0E0',
                         color: isValid ? 'white' : '#9E9E9E',
                         fontWeight: '600',
                         fontSize: '16px',

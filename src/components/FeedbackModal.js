@@ -145,7 +145,7 @@ export default function FeedbackModal({ isOpen, onClose }) {
                             style={{
                                 width: '100%',
                                 padding: '14px',
-                                background: rating > 0 ? '#2E7D32' : '#E0E0E0',
+                                background: rating > 0 ? '#1DB954' : '#E0E0E0',
                                 color: 'white',
                                 border: 'none',
                                 borderRadius: '12px',
@@ -171,7 +171,7 @@ export default function FeedbackModal({ isOpen, onClose }) {
                         <h3 style={{
                             fontSize: '20px',
                             fontWeight: '600',
-                            color: '#2E7D32',
+                            color: '#1DB954',
                             marginBottom: '8px'
                         }}>
                             Thank you!

@@ -31,7 +31,7 @@ export default function PrivacyPolicy() {
 
             {/* Privacy Shield */}
             <div style={{
-                background: 'linear-gradient(135deg, #2E7D32 0%, #4CAF50 100%)',
+                background: 'linear-gradient(135deg, #1DB954 0%, #4CAF50 100%)',
                 borderRadius: '20px',
                 padding: '32px 24px',
                 marginBottom: '24px',
@@ -52,7 +52,7 @@ export default function PrivacyPolicy() {
                 <div style={{ background: 'white', borderRadius: '16px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
                         <div style={{ background: '#E8F5E9', borderRadius: '12px', padding: '10px' }}>
-                            <Database size={24} color="#2E7D32" />
+                            <Database size={24} color="#1DB954" />
                         </div>
                         <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: '#333' }}>Data Storage</h3>
                     </div>

@@ -31,7 +31,7 @@ export default function About() {
 
             {/* App Logo/Banner */}
             <div style={{
-                background: 'linear-gradient(135deg, #2E7D32 0%, #4CAF50 100%)',
+                background: 'linear-gradient(135deg, #1DB954 0%, #4CAF50 100%)',
                 borderRadius: '20px',
                 padding: '40px 24px',
                 marginBottom: '24px',
@@ -68,7 +68,7 @@ export default function About() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                 <div style={{ background: 'white', borderRadius: '16px', padding: '20px', textAlign: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
                     <div style={{ background: '#E8F5E9', borderRadius: '12px', padding: '12px', display: 'inline-block', marginBottom: '12px' }}>
-                        <Globe size={28} color="#2E7D32" />
+                        <Globe size={28} color="#1DB954" />
                     </div>
                     <h4 style={{ fontSize: '14px', fontWeight: 'bold', color: '#333', marginBottom: '4px' }}>2,804+</h4>
                     <p style={{ fontSize: '12px', color: '#9E9E9E' }}>Indian Foods</p>
@@ -139,7 +139,7 @@ export default function About() {
                         <span key={idx} style={{
                             padding: '8px 16px',
                             background: '#E8F5E9',
-                            color: '#2E7D32',
+                            color: '#1DB954',
                             borderRadius: '20px',
                             fontSize: '13px',
                             fontWeight: '500'
@@ -181,7 +181,7 @@ export default function About() {
                         textDecoration: 'none',
                         color: '#333'
                     }}>
-                        <Mail size={20} color="#2E7D32" />
+                        <Mail size={20} color="#1DB954" />
                         <span style={{ fontSize: '14px' }}>support@aahar.app</span>
                     </a>
 
@@ -195,7 +195,7 @@ export default function About() {
                         textDecoration: 'none',
                         color: '#333'
                     }}>
-                        <Github size={20} color="#2E7D32" />
+                        <Github size={20} color="#1DB954" />
                         <span style={{ fontSize: '14px' }}>github.com/aahar</span>
                     </a>
 
@@ -209,7 +209,7 @@ export default function About() {
                         textDecoration: 'none',
                         color: '#333'
                     }}>
-                        <Globe size={20} color="#2E7D32" />
+                        <Globe size={20} color="#1DB954" />
                         <span style={{ fontSize: '14px' }}>www.aahar.app</span>
                     </a>
                 </div>
@@ -223,7 +223,7 @@ export default function About() {
                         style={{
                             background: 'none',
                             border: 'none',
-                            color: '#2E7D32',
+                            color: '#1DB954',
                             fontSize: '14px',
                             fontWeight: '600',
                             cursor: 'pointer',
@@ -238,7 +238,7 @@ export default function About() {
                         style={{
                             background: 'none',
                             border: 'none',
-                            color: '#2E7D32',
+                            color: '#1DB954',
                             fontSize: '14px',
                             fontWeight: '600',
                             cursor: 'pointer',

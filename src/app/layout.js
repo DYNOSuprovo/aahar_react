@@ -7,7 +7,7 @@ export const metadata = {
     title: 'Aahar - Nutrition with Tradition',
     description: 'Track your nutrition with traditional Indian foods. Smart calorie tracking, AI assistant, and personalized meal planning.',
     manifest: '/manifest.json',
-    themeColor: '#2E7D32',
+    themeColor: '#1DB954',
     viewport: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0',
     icons: {
         icon: '/icon.svg',
