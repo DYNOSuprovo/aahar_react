@@ -16,7 +16,9 @@ export default function Onboarding() {
         gender: 'male',
         height: '',
         weight: '',
-        activityLevel: 'sedentary'
+        activityLevel: 'sedentary',
+        customCalories: '',
+        customWater: ''
     });
 
     useEffect(() => {
@@ -25,7 +27,7 @@ export default function Onboarding() {
         }
     }, [user]);
 
-    const totalSteps = 3;
+    const totalSteps = 4;
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -36,6 +38,7 @@ export default function Onboarding() {
         if (step === 1) return formData.name && formData.name.trim().length > 0;
         if (step === 2) return formData.age > 0 && formData.height > 0 && formData.weight > 0;
         if (step === 3) return !!formData.activityLevel;
+        if (step === 4) return true; // Goals step always valid
         return false;
     };
 
@@ -52,7 +55,7 @@ export default function Onboarding() {
         if (step > 1) setStep(step - 1);
     };
 
-    const calculateGoals = () => {
+    const getCalculatedGoals = () => {
         const weight = parseFloat(formData.weight) || 0;
         const height = parseFloat(formData.height) || 0;
         const age = parseFloat(formData.age) || 0;
@@ -73,13 +76,27 @@ export default function Onboarding() {
         const heightInM = height / 100;
         const bmi = (weight > 0 && height > 0) ? (weight / (heightInM * heightInM)).toFixed(1) : 0;
 
+        return { tdee: tdee > 0 ? tdee : 2000, water: water > 0 ? water : 2000, bmi };
+    };
+
+    const calculatedGoals = getCalculatedGoals();
+
+    const calculateGoals = () => {
+        const weight = parseFloat(formData.weight) || 0;
+        const height = parseFloat(formData.height) || 0;
+        const age = parseFloat(formData.age) || 0;
+
+        // Use custom values if provided, otherwise use calculated
+        const finalCalories = formData.customCalories ? parseInt(formData.customCalories) : calculatedGoals.tdee;
+        const finalWater = formData.customWater ? parseInt(formData.customWater) : calculatedGoals.water;
+
         return {
             ...user,
             ...formData,
             weight, height, age,
-            bmi,
-            goalCalories: tdee > 0 ? tdee : 2000,
-            goalWater: water > 0 ? water : 2000
+            bmi: calculatedGoals.bmi,
+            goalCalories: finalCalories,
+            goalWater: finalWater
         };
     };
 
@@ -94,7 +111,8 @@ export default function Onboarding() {
     const stepTitles = [
         { title: "👋 Let's get to know you!", desc: "Tell us your name to personalize your experience" },
         { title: "📊 Your Body Stats", desc: "This helps us calculate your calorie and water needs" },
-        { title: "🏃 Activity Level", desc: "How active are you on a daily basis?" }
+        { title: "🏃 Activity Level", desc: "How active are you on a daily basis?" },
+        { title: "🎯 Your Daily Goals", desc: "Based on your stats, here are your recommended targets" }
     ];
 
     const activityOptions = [
@@ -281,6 +299,90 @@ export default function Onboarding() {
                                         )}
                                     </motion.div>
                                 ))}
+                            </div>
+                        )}
+
+                        {step === 4 && (
+                            <div>
+                                {/* Calculated Goals Display */}
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+                                    {/* Calorie Goal */}
+                                    <div style={{
+                                        background: 'linear-gradient(135deg, #FFF7ED, #FFEDD5)',
+                                        borderRadius: '20px', padding: '20px', textAlign: 'center',
+                                        border: '2px solid #FB923C'
+                                    }}>
+                                        <div style={{ fontSize: '32px', marginBottom: '8px' }}>🔥</div>
+                                        <div style={{ fontSize: '28px', fontWeight: '800', color: '#EA580C' }}>
+                                            {formData.customCalories || calculatedGoals.tdee}
+                                        </div>
+                                        <div style={{ fontSize: '12px', color: '#9A3412', fontWeight: '600' }}>kcal/day</div>
+                                    </div>
+
+                                    {/* Water Goal */}
+                                    <div style={{
+                                        background: 'linear-gradient(135deg, #EFF6FF, #DBEAFE)',
+                                        borderRadius: '20px', padding: '20px', textAlign: 'center',
+                                        border: '2px solid #3B82F6'
+                                    }}>
+                                        <div style={{ fontSize: '32px', marginBottom: '8px' }}>💧</div>
+                                        <div style={{ fontSize: '28px', fontWeight: '800', color: '#1D4ED8' }}>
+                                            {formData.customWater || calculatedGoals.water}
+                                        </div>
+                                        <div style={{ fontSize: '12px', color: '#1E40AF', fontWeight: '600' }}>ml/day</div>
+                                    </div>
+                                </div>
+
+                                {/* Customize Goals */}
+                                <div style={{
+                                    background: 'white', borderRadius: '16px', padding: '20px',
+                                    border: '2px solid #e2e8f0', marginBottom: '16px'
+                                }}>
+                                    <div style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <Target size={18} color="#1DB954" />
+                                        Customize Your Goals (Optional)
+                                    </div>
+
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                        <div>
+                                            <label style={{ fontSize: '12px', color: '#64748b', marginBottom: '6px', display: 'block' }}>Calorie Goal</label>
+                                            <input
+                                                type="number"
+                                                name="customCalories"
+                                                value={formData.customCalories}
+                                                onChange={handleInputChange}
+                                                placeholder={calculatedGoals.tdee.toString()}
+                                                style={{
+                                                    width: '100%', padding: '12px', borderRadius: '12px',
+                                                    border: '2px solid #e2e8f0', fontSize: '16px', outline: 'none',
+                                                    textAlign: 'center', fontWeight: '700'
+                                                }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label style={{ fontSize: '12px', color: '#64748b', marginBottom: '6px', display: 'block' }}>Water Goal (ml)</label>
+                                            <input
+                                                type="number"
+                                                name="customWater"
+                                                value={formData.customWater}
+                                                onChange={handleInputChange}
+                                                placeholder={calculatedGoals.water.toString()}
+                                                style={{
+                                                    width: '100%', padding: '12px', borderRadius: '12px',
+                                                    border: '2px solid #e2e8f0', fontSize: '16px', outline: 'none',
+                                                    textAlign: 'center', fontWeight: '700'
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div style={{ background: '#F0FDF4', borderRadius: '12px', padding: '14px', display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                                    <Sparkles size={18} color="#16a34a" style={{ marginTop: '2px', flexShrink: 0 }} />
+                                    <p style={{ fontSize: '13px', color: '#166534', lineHeight: '1.5' }}>
+                                        These goals are calculated using the Mifflin-St Jeor equation. Feel free to adjust based on your personal needs!
+                                    </p>
+                                </div>
                             </div>
                         )}
                     </motion.div>

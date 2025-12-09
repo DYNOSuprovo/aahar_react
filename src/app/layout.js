@@ -8,7 +8,13 @@ export const metadata = {
     description: 'Track your nutrition with traditional Indian foods. Smart calorie tracking, AI assistant, and personalized meal planning.',
     manifest: '/manifest.json',
     themeColor: '#1DB954',
-    viewport: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0',
+    viewport: {
+        width: 'device-width',
+        initialScale: 1,
+        maximumScale: 1,
+        userScalable: false,
+        viewportFit: 'cover',
+    },
     icons: {
         icon: '/icon.svg',
         apple: '/icon.svg',
@@ -53,3 +59,4 @@ export default function RootLayout({ children }) {
         </html>
     );
 }
+

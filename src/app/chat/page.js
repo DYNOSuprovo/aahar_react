@@ -13,6 +13,49 @@ const quickSuggestions = [
     { text: "Meal prep tips", icon: "📦" },
 ];
 
+// Smart fallback responses for when AI is unavailable
+const fallbackResponses = {
+    bmi: {
+        keywords: ['bmi', 'body mass', 'calculate bmi', 'my bmi'],
+        response: `**BMI (Body Mass Index)** is calculated as:\n\n**Formula:** Weight (kg) ÷ Height² (m)\n\n📊 **BMI Categories:**\n• Under 18.5 → Underweight\n• 18.5 - 24.9 → Normal ✅\n• 25 - 29.9 → Overweight\n• 30+ → Obese\n\n💡 **Tip:** Check your BMI in the Profile section!`
+    },
+    protein: {
+        keywords: ['protein', 'protein source', 'high protein', 'protein food'],
+        response: `**High Protein Foods** 💪\n\n🥬 **Vegetarian:**\n• Paneer (18g/100g)\n• Dal/Lentils (9g/100g)\n• Chickpeas (19g/100g)\n• Greek Yogurt (10g/100g)\n• Tofu (8g/100g)\n\n🍗 **Non-Vegetarian:**\n• Chicken Breast (31g/100g)\n• Eggs (13g/100g)\n• Fish (20-25g/100g)\n\n🎯 **Daily Goal:** 0.8-1g per kg body weight`
+    },
+    snack: {
+        keywords: ['snack', 'healthy snack', 'snack idea', 'low calorie snack'],
+        response: `**Healthy Indian Snacks** 🍎\n\n✅ **Low Calorie Options:**\n• Makhana (roasted) - 90 cal/30g\n• Sprouts chaat - 120 cal\n• Buttermilk (chaas) - 40 cal\n• Cucumber raita - 60 cal\n• Roasted chana - 100 cal/30g\n• Fruit bowl - 80-100 cal\n\n❌ **Avoid:**\n• Samosa (~250 cal)\n• Pakora (~150 cal each)\n• Fried snacks`
+    },
+    dinner: {
+        keywords: ['dinner', 'low calorie dinner', 'light dinner', 'healthy dinner'],
+        response: `**Healthy Dinner Ideas** 🥗\n\n🌙 **Light Options (300-400 cal):**\n• Dal + 1 Roti + Sabzi\n• Vegetable Khichdi\n• Grilled Paneer Salad\n• Moong Dal Chilla\n\n💡 **Tips:**\n• Eat 2-3 hours before sleep\n• Avoid heavy curries at night\n• Include fiber for better digestion\n• Drink water, not cold drinks`
+    },
+    weight: {
+        keywords: ['weight loss', 'lose weight', 'reduce weight', 'fat loss'],
+        response: `**Weight Loss Basics** ⚖️\n\n🔥 **Calorie Deficit:** Eat 300-500 cal less than TDEE\n\n✅ **Do:**\n• Track your meals (use Aahar!)\n• Drink 2-3L water daily\n• Include protein in every meal\n• Walk 8000+ steps\n\n❌ **Don't:**\n• Skip meals\n• Crash diet\n• Avoid all carbs\n\n📊 Lose 0.5-1 kg/week = healthy pace`
+    },
+    water: {
+        keywords: ['water', 'hydration', 'how much water', 'water intake'],
+        response: `**Daily Water Intake** 💧\n\n📏 **General Rule:** Weight (kg) × 35 = ml/day\n\n**Examples:**\n• 50 kg → 1750 ml\n• 70 kg → 2450 ml\n• 90 kg → 3150 ml\n\n💡 **Tips:**\n• Start your day with water\n• Track it in Water Tracker!\n• Increase during exercise/summer`
+    },
+    meal: {
+        keywords: ['meal prep', 'meal plan', 'weekly meal', 'planning'],
+        response: `**Meal Prep Tips** 📦\n\n🗓️ **Weekly Planning:**\n1. Plan meals on Sunday\n2. Prep ingredients in bulk\n3. Cook grains for 2-3 days\n4. Pre-cut vegetables\n\n🥡 **Batch Cook:**\n• Dal (3-4 day supply)\n• Rice/Roti dough\n• Sabzi bases\n\n💰 Saves time, money & calories!`
+    }
+};
+
+// Find matching fallback response
+const getFallbackResponse = (query) => {
+    const lowerQuery = query.toLowerCase();
+    for (const [key, data] of Object.entries(fallbackResponses)) {
+        if (data.keywords.some(kw => lowerQuery.includes(kw))) {
+            return data.response;
+        }
+    }
+    return null;
+};
+
 export default function Chat() {
     const [messages, setMessages] = useState([
         {
@@ -47,11 +90,24 @@ export default function Chat() {
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             }]);
         } catch (error) {
-            setMessages(prev => [...prev, {
-                role: 'model',
-                content: "I'm having trouble connecting right now. The server might be waking up. Please try again in a moment! 🔄",
-                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            }]);
+            // Try to get a smart fallback response
+            const fallback = getFallbackResponse(userMsg.content);
+
+            if (fallback) {
+                // Use pre-defined response when AI fails
+                setMessages(prev => [...prev, {
+                    role: 'model',
+                    content: fallback + "\n\n---\n*💡 Offline response - AI will respond when connected*",
+                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                }]);
+            } else {
+                // Generic error for unrecognized queries
+                setMessages(prev => [...prev, {
+                    role: 'model',
+                    content: "I'm having trouble connecting right now. The server might be waking up. Please try again in a moment! 🔄\n\n💡 **Quick tip:** Try asking about BMI, protein, snacks, or meal planning for instant answers!",
+                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                }]);
+            }
         } finally {
             setLoading(false);
         }

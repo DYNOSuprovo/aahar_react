@@ -8,8 +8,8 @@ export default function FeedbackButton() {
     const [isOpen, setIsOpen] = useState(false);
     const pathname = usePathname();
 
-    // Hide on specific pages
-    if (['/', '/login', '/signup', '/onboarding', '/chat'].includes(pathname)) return null;
+    // Only show on profile page
+    if (pathname !== '/profile') return null;
 
     return (
         <>
