@@ -95,8 +95,8 @@ export const searchFood = async (query) => {
                 region.includes(searchTerm);
         });
 
-        // Return top 30 results for better performance
-        return results.slice(0, 30);
+        // Return top 100 results for better discoverability
+        return results.slice(0, 100);
     } catch (error) {
         console.error("Search Error:", error);
         return [];

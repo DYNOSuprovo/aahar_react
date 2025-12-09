@@ -1,7 +1,8 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronRight, ChevronLeft, User, Ruler, Activity, Check } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronRight, ChevronLeft, User, Ruler, Activity, Check, Sparkles, Target } from 'lucide-react';
 import { useUser } from '../../context/UserContext';
 
 export default function Onboarding() {
@@ -18,7 +19,6 @@ export default function Onboarding() {
         activityLevel: 'sedentary'
     });
 
-    // Initialize name from context if available (e.g. from login)
     useEffect(() => {
         if (user && user.name) {
             setFormData(prev => ({ ...prev, name: user.name }));
@@ -49,13 +49,10 @@ export default function Onboarding() {
     };
 
     const handleBack = () => {
-        if (step > 1) {
-            setStep(step - 1);
-        }
+        if (step > 1) setStep(step - 1);
     };
 
     const calculateGoals = () => {
-        // Mifflin-St Jeor Equation
         const weight = parseFloat(formData.weight) || 0;
         const height = parseFloat(formData.height) || 0;
         const age = parseFloat(formData.age) || 0;
@@ -72,22 +69,16 @@ export default function Onboarding() {
         };
 
         const tdee = Math.round(bmr * (activityMultipliers[formData.activityLevel] || 1.2));
-
-        // Water: approx 35ml per kg
         const water = Math.round(weight * 35);
-
-        // BMI
         const heightInM = height / 100;
         const bmi = (weight > 0 && height > 0) ? (weight / (heightInM * heightInM)).toFixed(1) : 0;
 
         return {
-            ...user, // Keep existing user data (like email)
+            ...user,
             ...formData,
-            weight: weight,
-            height: height,
-            age: age,
-            bmi: bmi,
-            goalCalories: tdee > 0 ? tdee : 2000, // Fallback
+            weight, height, age,
+            bmi,
+            goalCalories: tdee > 0 ? tdee : 2000,
             goalWater: water > 0 ? water : 2000
         };
     };
@@ -100,17 +91,35 @@ export default function Onboarding() {
 
     const isValid = validateStep();
 
+    const stepTitles = [
+        { title: "👋 Let's get to know you!", desc: "Tell us your name to personalize your experience" },
+        { title: "📊 Your Body Stats", desc: "This helps us calculate your calorie and water needs" },
+        { title: "🏃 Activity Level", desc: "How active are you on a daily basis?" }
+    ];
+
+    const activityOptions = [
+        { value: 'sedentary', label: 'Sedentary', desc: 'Little or no exercise', emoji: '🪑' },
+        { value: 'light', label: 'Lightly Active', desc: 'Exercise 1-3 times/week', emoji: '🚶' },
+        { value: 'moderate', label: 'Moderately Active', desc: 'Exercise 4-5 times/week', emoji: '🏃' },
+        { value: 'active', label: 'Very Active', desc: 'Daily exercise or physical job', emoji: '💪' }
+    ];
+
     return (
         <div style={{
             minHeight: '100vh',
-            background: 'linear-gradient(135deg, #E8F5E9 0%, #FFFFFF 100%)',
+            background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfeff 50%, #f8fafc 100%)',
             padding: '20px',
             display: 'flex',
             flexDirection: 'column',
             position: 'relative'
         }}>
+            {/* Decorative Elements */}
+            <div style={{ position: 'absolute', top: '10%', right: '5%', width: '100px', height: '100px', borderRadius: '50%', background: 'rgba(29, 185, 84, 0.1)', filter: 'blur(40px)' }} />
+            <div style={{ position: 'absolute', bottom: '20%', left: '5%', width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(59, 130, 246, 0.1)', filter: 'blur(30px)' }} />
+
             {/* Restart Button */}
-            <button
+            <motion.button
+                whileTap={{ scale: 0.95 }}
                 onClick={() => {
                     if (confirm('Start over? This will clear your progress.')) {
                         resetApp();
@@ -118,225 +127,210 @@ export default function Onboarding() {
                     }
                 }}
                 style={{
-                    position: 'absolute',
-                    top: '20px',
-                    right: '20px',
-                    background: 'none',
-                    border: 'none',
-                    color: '#757575',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    zIndex: 10
+                    position: 'absolute', top: '20px', right: '20px',
+                    background: 'rgba(239, 68, 68, 0.1)', border: 'none',
+                    color: '#EF4444', fontSize: '12px', fontWeight: '600',
+                    cursor: 'pointer', zIndex: 10, padding: '8px 16px',
+                    borderRadius: '10px'
                 }}
             >
                 Restart
-            </button>
+            </motion.button>
 
             {/* Progress Bar */}
-            <div style={{ marginBottom: '40px', marginTop: '40px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', color: '#1DB954', fontWeight: '600' }}>
-                    <span>Step {step} of {totalSteps}</span>
-                    <span>{Math.round((step / totalSteps) * 100)}%</span>
+            <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
+                style={{ marginBottom: '30px', marginTop: '50px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                    <span style={{ color: '#1DB954', fontWeight: '700', fontSize: '14px' }}>Step {step} of {totalSteps}</span>
+                    <span style={{ color: '#64748b', fontWeight: '600', fontSize: '14px' }}>{Math.round((step / totalSteps) * 100)}%</span>
                 </div>
-                <div style={{ height: '6px', background: '#C8E6C9', borderRadius: '3px', overflow: 'hidden' }}>
-                    <div style={{
-                        height: '100%',
-                        width: `${(step / totalSteps) * 100}%`,
-                        background: '#1DB954',
-                        transition: 'width 0.3s ease'
-                    }} />
+                <div style={{ height: '8px', background: '#e2e8f0', borderRadius: '10px', overflow: 'hidden' }}>
+                    <motion.div
+                        animate={{ width: `${(step / totalSteps) * 100}%` }}
+                        transition={{ duration: 0.5, ease: 'easeOut' }}
+                        style={{ height: '100%', background: 'linear-gradient(90deg, #1DB954, #22c55e)', borderRadius: '10px' }}
+                    />
                 </div>
-            </div>
+            </motion.div>
 
             {/* Content */}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={step}
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        transition={{ duration: 0.3 }}
+                    >
+                        {/* Step Header */}
+                        <h1 style={{ fontSize: '28px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>
+                            {stepTitles[step - 1].title}
+                        </h1>
+                        <p style={{ color: '#64748b', marginBottom: '30px', fontSize: '15px' }}>
+                            {stepTitles[step - 1].desc}
+                        </p>
 
-                {step === 1 && (
-                    <div className="animate-fade-in">
-                        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: '#333', marginBottom: '10px' }}>Let's get to know you!</h1>
-                        <p style={{ color: '#757575', marginBottom: '30px' }}>We need some basic details to personalize your plan.</p>
-
-                        <div style={{ marginBottom: '20px' }}>
-                            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#333' }}>Your Name</label>
-                            <div style={{ position: 'relative' }}>
-                                <User size={20} color="#9E9E9E" style={{ position: 'absolute', left: '12px', top: '14px' }} />
-                                <input
-                                    type="text"
-                                    name="name"
-                                    value={formData.name}
-                                    onChange={handleInputChange}
-                                    placeholder="John Doe"
-                                    style={{
-                                        width: '100%', padding: '14px 14px 14px 44px', borderRadius: '12px',
-                                        border: '1px solid #E0E0E0', fontSize: '16px', outline: 'none'
-                                    }}
-                                />
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {step === 2 && (
-                    <div className="animate-fade-in">
-                        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: '#333', marginBottom: '10px' }}>Body Stats</h1>
-                        <p style={{ color: '#757575', marginBottom: '30px' }}>This helps us calculate your calorie and water needs.</p>
-
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                            <div style={{ marginBottom: '20px' }}>
-                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#333' }}>Age</label>
-                                <input
-                                    type="number"
-                                    name="age"
-                                    value={formData.age}
-                                    onChange={handleInputChange}
-                                    placeholder="25"
-                                    style={{
-                                        width: '100%', padding: '14px', borderRadius: '12px',
-                                        border: '1px solid #E0E0E0', fontSize: '16px', outline: 'none'
-                                    }}
-                                />
-                            </div>
-                            <div style={{ marginBottom: '20px' }}>
-                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#333' }}>Gender</label>
-                                <select
-                                    name="gender"
-                                    value={formData.gender}
-                                    onChange={handleInputChange}
-                                    style={{
-                                        width: '100%', padding: '14px', borderRadius: '12px',
-                                        border: '1px solid #E0E0E0', fontSize: '16px', outline: 'none', background: 'white'
-                                    }}
-                                >
-                                    <option value="male">Male</option>
-                                    <option value="female">Female</option>
-                                    <option value="other">Other</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div style={{ marginBottom: '20px' }}>
-                            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#333' }}>Height (cm)</label>
-                            <div style={{ position: 'relative' }}>
-                                <Ruler size={20} color="#9E9E9E" style={{ position: 'absolute', left: '12px', top: '14px' }} />
-                                <input
-                                    type="number"
-                                    name="height"
-                                    value={formData.height}
-                                    onChange={handleInputChange}
-                                    placeholder="175"
-                                    style={{
-                                        width: '100%', padding: '14px 14px 14px 44px', borderRadius: '12px',
-                                        border: '1px solid #E0E0E0', fontSize: '16px', outline: 'none'
-                                    }}
-                                />
-                            </div>
-                        </div>
-
-                        <div style={{ marginBottom: '20px' }}>
-                            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#333' }}>Weight (kg)</label>
-                            <div style={{ position: 'relative' }}>
-                                <Activity size={20} color="#9E9E9E" style={{ position: 'absolute', left: '12px', top: '14px' }} />
-                                <input
-                                    type="number"
-                                    name="weight"
-                                    value={formData.weight}
-                                    onChange={handleInputChange}
-                                    placeholder="70"
-                                    style={{
-                                        width: '100%', padding: '14px 14px 14px 44px', borderRadius: '12px',
-                                        border: '1px solid #E0E0E0', fontSize: '16px', outline: 'none'
-                                    }}
-                                />
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {step === 3 && (
-                    <div className="animate-fade-in">
-                        <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: '#333', marginBottom: '10px' }}>Activity Level</h1>
-                        <p style={{ color: '#757575', marginBottom: '30px' }}>How active are you on a daily basis?</p>
-
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                            {[
-                                { value: 'sedentary', label: 'Sedentary', desc: 'Little or no exercise' },
-                                { value: 'light', label: 'Lightly Active', desc: 'Exercise 1-3 times/week' },
-                                { value: 'moderate', label: 'Moderately Active', desc: 'Exercise 4-5 times/week' },
-                                { value: 'active', label: 'Very Active', desc: 'Daily exercise or physical job' }
-                            ].map((option) => (
-                                <div
-                                    key={option.value}
-                                    onClick={() => setFormData(prev => ({ ...prev, activityLevel: option.value }))}
-                                    style={{
-                                        padding: '16px',
-                                        borderRadius: '12px',
-                                        border: formData.activityLevel === option.value ? '2px solid #1DB954' : '1px solid #E0E0E0',
-                                        background: formData.activityLevel === option.value ? '#E8F5E9' : 'white',
-                                        cursor: 'pointer',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'space-between'
-                                    }}
-                                >
-                                    <div>
-                                        <div style={{ fontWeight: '600', color: '#333' }}>{option.label}</div>
-                                        <div style={{ fontSize: '12px', color: '#757575' }}>{option.desc}</div>
-                                    </div>
-                                    {formData.activityLevel === option.value && <Check size={20} color="#1DB954" />}
+                        {step === 1 && (
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '10px', fontWeight: '600', color: '#334155', fontSize: '14px' }}>Your Name</label>
+                                <div style={{ position: 'relative' }}>
+                                    <User size={20} color="#94a3b8" style={{ position: 'absolute', left: '16px', top: '18px' }} />
+                                    <input
+                                        type="text" name="name" value={formData.name} onChange={handleInputChange}
+                                        placeholder="Enter your name"
+                                        style={{
+                                            width: '100%', padding: '18px 18px 18px 50px', borderRadius: '16px',
+                                            border: '2px solid #e2e8f0', fontSize: '16px', outline: 'none',
+                                            background: 'white', transition: 'border-color 0.2s'
+                                        }}
+                                        onFocus={(e) => e.target.style.borderColor = '#1DB954'}
+                                        onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                                    />
                                 </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
+                            </div>
+                        )}
 
+                        {step === 2 && (
+                            <div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+                                    <div>
+                                        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#334155', fontSize: '14px' }}>Age</label>
+                                        <input
+                                            type="number" name="age" value={formData.age} onChange={handleInputChange} placeholder="25"
+                                            style={{
+                                                width: '100%', padding: '16px', borderRadius: '14px',
+                                                border: '2px solid #e2e8f0', fontSize: '16px', outline: 'none', background: 'white'
+                                            }}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#334155', fontSize: '14px' }}>Gender</label>
+                                        <select
+                                            name="gender" value={formData.gender} onChange={handleInputChange}
+                                            style={{
+                                                width: '100%', padding: '16px', borderRadius: '14px',
+                                                border: '2px solid #e2e8f0', fontSize: '16px', outline: 'none', background: 'white'
+                                            }}
+                                        >
+                                            <option value="male">Male</option>
+                                            <option value="female">Female</option>
+                                            <option value="other">Other</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div style={{ marginBottom: '20px' }}>
+                                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#334155', fontSize: '14px' }}>Height (cm)</label>
+                                    <div style={{ position: 'relative' }}>
+                                        <Ruler size={20} color="#94a3b8" style={{ position: 'absolute', left: '16px', top: '18px' }} />
+                                        <input
+                                            type="number" name="height" value={formData.height} onChange={handleInputChange} placeholder="170"
+                                            style={{
+                                                width: '100%', padding: '18px 18px 18px 50px', borderRadius: '14px',
+                                                border: '2px solid #e2e8f0', fontSize: '16px', outline: 'none', background: 'white'
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#334155', fontSize: '14px' }}>Weight (kg)</label>
+                                    <div style={{ position: 'relative' }}>
+                                        <Activity size={20} color="#94a3b8" style={{ position: 'absolute', left: '16px', top: '18px' }} />
+                                        <input
+                                            type="number" name="weight" value={formData.weight} onChange={handleInputChange} placeholder="65"
+                                            style={{
+                                                width: '100%', padding: '18px 18px 18px 50px', borderRadius: '14px',
+                                                border: '2px solid #e2e8f0', fontSize: '16px', outline: 'none', background: 'white'
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {step === 3 && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                {activityOptions.map((option) => (
+                                    <motion.div
+                                        key={option.value}
+                                        whileTap={{ scale: 0.98 }}
+                                        onClick={() => setFormData(prev => ({ ...prev, activityLevel: option.value }))}
+                                        style={{
+                                            padding: '18px 20px', borderRadius: '16px',
+                                            border: formData.activityLevel === option.value ? '2px solid #1DB954' : '2px solid #e2e8f0',
+                                            background: formData.activityLevel === option.value ? 'linear-gradient(135deg, #f0fdf4, #dcfce7)' : 'white',
+                                            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                            boxShadow: formData.activityLevel === option.value ? '0 4px 15px rgba(29,185,84,0.15)' : '0 2px 8px rgba(0,0,0,0.04)',
+                                            transition: 'all 0.2s'
+                                        }}
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                                            <span style={{ fontSize: '28px' }}>{option.emoji}</span>
+                                            <div>
+                                                <div style={{ fontWeight: '700', color: '#0f172a', fontSize: '15px' }}>{option.label}</div>
+                                                <div style={{ fontSize: '13px', color: '#64748b' }}>{option.desc}</div>
+                                            </div>
+                                        </div>
+                                        {formData.activityLevel === option.value && (
+                                            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}
+                                                style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#1DB954', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                <Check size={14} color="white" />
+                                            </motion.div>
+                                        )}
+                                    </motion.div>
+                                ))}
+                            </div>
+                        )}
+                    </motion.div>
+                </AnimatePresence>
             </div>
 
             {/* Navigation Buttons */}
-            <div style={{ display: 'flex', gap: '16px', marginTop: '20px' }}>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+                style={{ display: 'flex', gap: '14px', marginTop: '20px' }}>
                 {step > 1 && (
-                    <button
+                    <motion.button
+                        whileTap={{ scale: 0.95 }}
                         onClick={handleBack}
                         style={{
-                            padding: '16px',
-                            borderRadius: '12px',
-                            border: 'none',
-                            background: '#F5F5F5',
-                            color: '#757575',
-                            fontWeight: '600',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
+                            padding: '18px', borderRadius: '16px', border: 'none',
+                            background: '#f1f5f9', color: '#64748b', fontWeight: '600',
+                            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
                         }}
                     >
                         <ChevronLeft size={24} />
-                    </button>
+                    </motion.button>
                 )}
-                <button
+                <motion.button
+                    whileTap={{ scale: 0.98 }}
                     onClick={handleNext}
                     disabled={!isValid}
                     style={{
-                        flex: 1,
-                        padding: '16px',
-                        borderRadius: '12px',
-                        border: 'none',
-                        background: isValid ? 'linear-gradient(135deg, #1DB954 0%, #1B5E20 100%)' : '#E0E0E0',
-                        color: isValid ? 'white' : '#9E9E9E',
-                        fontWeight: '600',
-                        fontSize: '16px',
+                        flex: 1, padding: '18px', borderRadius: '16px', border: 'none',
+                        background: isValid ? 'linear-gradient(135deg, #1DB954, #16a34a)' : '#e2e8f0',
+                        color: isValid ? 'white' : '#94a3b8',
+                        fontWeight: '700', fontSize: '16px',
                         cursor: isValid ? 'pointer' : 'not-allowed',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '8px',
-                        boxShadow: isValid ? '0 4px 12px rgba(46, 125, 50, 0.3)' : 'none'
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+                        boxShadow: isValid ? '0 8px 25px rgba(29, 185, 84, 0.35)' : 'none',
+                        transition: 'all 0.3s'
                     }}
                 >
-                    {step === totalSteps ? 'Complete Setup' : 'Continue'}
-                    {step < totalSteps && <ChevronRight size={20} />}
-                </button>
-            </div>
+                    {step === totalSteps ? (
+                        <>
+                            <Sparkles size={20} />
+                            Complete Setup
+                        </>
+                    ) : (
+                        <>
+                            Continue
+                            <ChevronRight size={20} />
+                        </>
+                    )}
+                </motion.button>
+            </motion.div>
         </div>
     );
 }

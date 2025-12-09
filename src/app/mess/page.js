@@ -1,33 +1,55 @@
 "use client";
 import { useState, useEffect } from 'react';
-import { Calendar, Star, Plus, Minus, Check, Clock, Utensils, ChevronRight, Coffee, Circle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Calendar, Star, Plus, Minus, Check, Clock, Utensils, ChevronRight, Coffee, Flame, Zap, Heart } from 'lucide-react';
 import { useUser } from '../../context/UserContext';
 import BottomNav from '../../components/BottomNav';
 import confetti from 'canvas-confetti';
-import { SlideUp, FadeIn } from '../../components/Animations';
+
+// Food emoji mapping for visual appeal
+const foodEmojis = {
+    'Coffee': '☕', 'Chai': '🍵', 'Tea': '🍵',
+    'Poha': '🍚', 'Aloo Paratha': '🫓', 'Idli Sambar': '🍛',
+    'Bread Omelette': '🍳', 'Puri Bhaji': '🫓', 'Masala Dosa': '🥞',
+    'Chole Bhature': '🍛', 'Dal': '🍲', 'Rice': '🍚',
+    'Roti': '🫓', 'Achaar': '🥒', 'Paneer': '🧀',
+    'Chicken': '🍗', 'Egg': '🥚', 'Fish': '🐟',
+    'Mutton': '🍖', 'Biryani': '🍛', 'Samosa': '🥟',
+    'Pakora': '🍘', 'Vada Pav': '🍔', 'Pani Puri': '🥣',
+    default: '🍽️'
+};
+
+const getEmoji = (name) => {
+    for (const [key, emoji] of Object.entries(foodEmojis)) {
+        if (name.toLowerCase().includes(key.toLowerCase())) return emoji;
+    }
+    return foodEmojis.default;
+};
+
+// Calorie color coding
+const getCalorieColor = (cal) => {
+    if (cal < 150) return { bg: '#E8F5E9', text: '#2E7D32' }; // Low - Green
+    if (cal < 300) return { bg: '#FFF3E0', text: '#E65100' }; // Medium - Orange
+    return { bg: '#FFEBEE', text: '#C62828' }; // High - Red
+};
 
 export default function Mess() {
     const { addFood } = useUser();
     const [selectedMeal, setSelectedMeal] = useState('lunch');
-    const [selectedDay, setSelectedDay] = useState(new Date().getDay() === 0 ? 6 : new Date().getDay() - 1); // Default to today
-
-    // Store quantities: { 'lunch-Rice': 2, 'lunch-Roti': 3 }
+    const [selectedDay, setSelectedDay] = useState(new Date().getDay() === 0 ? 6 : new Date().getDay() - 1);
     const [quantities, setQuantities] = useState({});
-
-    const [bookedMeals, setBookedMeals] = useState({}); // Track if a meal slot is logged for today
+    const [bookedMeals, setBookedMeals] = useState({});
     const [isLoaded, setIsLoaded] = useState(false);
     const [currentDate, setCurrentDate] = useState(new Date());
+    const [showSummary, setShowSummary] = useState(false);
 
-    // Load from LocalStorage on mount
     useEffect(() => {
         const savedBooked = localStorage.getItem('aahar_mess_booked');
         const savedDate = localStorage.getItem('aahar_mess_date');
         const today = new Date().toISOString().split('T')[0];
-
         if (savedDate === today && savedBooked) {
             setBookedMeals(JSON.parse(savedBooked));
         } else {
-            // Reset for new day or first use
             setBookedMeals({});
             localStorage.setItem('aahar_mess_booked', '{}');
             localStorage.setItem('aahar_mess_date', today);
@@ -35,7 +57,6 @@ export default function Mess() {
         setIsLoaded(true);
     }, []);
 
-    // Save to LocalStorage whenever bookedMeals changes
     useEffect(() => {
         if (isLoaded) {
             const today = new Date().toISOString().split('T')[0];
@@ -44,7 +65,6 @@ export default function Mess() {
         }
     }, [bookedMeals, isLoaded]);
 
-    // Get today's day index (0 = Monday, 6 = Sunday)
     const getTodayIndex = () => {
         const day = currentDate.getDay();
         return day === 0 ? 6 : day - 1;
@@ -53,21 +73,18 @@ export default function Mess() {
     const todayIndex = getTodayIndex();
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-    // Generate dates for the week
     const getWeekDates = () => {
         const today = new Date();
         const dates = [];
         for (let i = 0; i < 7; i++) {
             const date = new Date(today);
-            date.setDate(today.getDate() - today.getDay() + (i + 1)); // Monday = 1
+            date.setDate(today.getDate() - today.getDay() + (i + 1));
             dates.push(date.getDate());
         }
         return dates;
     };
-
     const dates = getWeekDates();
 
-    // Menu Configuration
     const messMenu = {
         breakfast: {
             staples: [
@@ -75,30 +92,30 @@ export default function Mess() {
                 { name: 'Chai', unit: 'cup', calories: 60, protein: 2, carbs: 10, fat: 2, desc: 'Masala tea', unlimited: true },
             ],
             weekly: {
-                0: { name: 'Poha', calories: 250, protein: 6, carbs: 42, fat: 8, rating: 4.2, desc: 'Flattened rice with peanuts' },
+                0: { name: 'Poha', calories: 250, protein: 6, carbs: 42, fat: 8, rating: 4.2, desc: 'Flattened rice with peanuts', popular: true },
                 1: { name: 'Aloo Paratha', calories: 320, protein: 8, carbs: 50, fat: 12, rating: 4.3, desc: 'Stuffed flatbread' },
-                2: { name: 'Idli Sambar', calories: 280, protein: 10, carbs: 46, fat: 6, rating: 4.4, desc: 'Steamed rice cakes' },
+                2: { name: 'Idli Sambar', calories: 280, protein: 10, carbs: 46, fat: 6, rating: 4.4, desc: 'Steamed rice cakes', popular: true },
                 3: { name: 'Bread Omelette', calories: 260, protein: 14, carbs: 30, fat: 10, rating: 4.3, desc: 'Egg sandwich' },
                 4: { name: 'Puri Bhaji', calories: 380, protein: 9, carbs: 58, fat: 14, rating: 4.5, desc: 'Fried bread curry' },
-                5: { name: 'Masala Dosa', calories: 360, protein: 9, carbs: 55, fat: 12, rating: 4.7, desc: 'Crispy crepe' },
-                6: { name: 'Chole Bhature', calories: 480, protein: 14, carbs: 68, fat: 16, rating: 4.9, desc: 'Chickpea curry fried bread' },
+                5: { name: 'Masala Dosa', calories: 360, protein: 9, carbs: 55, fat: 12, rating: 4.7, desc: 'Crispy crepe', popular: true },
+                6: { name: 'Chole Bhature', calories: 480, protein: 14, carbs: 68, fat: 16, rating: 4.9, desc: 'Chickpea curry fried bread', popular: true },
             }
         },
         lunch: {
             staples: [
                 { name: 'Dal', unit: 'bowl', calories: 180, protein: 12, carbs: 28, fat: 3, desc: 'Yellow dal tadka', unlimited: true },
                 { name: 'Rice', unit: '150g', calories: 200, protein: 4, carbs: 44, fat: 0, desc: 'Steamed white rice', unlimited: true },
-                { name: 'Roti', unit: 'pc', calories: 70, protein: 2.5, carbs: 14, fat: 1, desc: 'Whole wheat roti', unlimited: true }, // Adjusted cal for 1 roti
+                { name: 'Roti', unit: 'pc', calories: 70, protein: 2.5, carbs: 14, fat: 1, desc: 'Whole wheat roti', unlimited: true },
                 { name: 'Achaar', unit: 'srv', calories: 15, protein: 0, carbs: 3, fat: 0, desc: 'Pickle', unlimited: true },
             ],
             weekly: {
                 0: { type: 'veg', items: [{ name: 'Aloo Sabzi', calories: 180, protein: 4, carbs: 34, fat: 6, rating: 4.0, desc: 'Potato curry' }] },
-                1: { type: 'choice', veg: { name: 'Paneer Sabzi', calories: 220, rating: 4.2 }, nonVeg: { name: 'Chicken Curry', calories: 280, rating: 4.4 } },
-                2: { type: 'choice', veg: { name: 'Mix Veg', calories: 160, rating: 3.9 }, nonVeg: { name: 'Egg Curry', calories: 200, rating: 4.1 } },
-                3: { type: 'veg', items: [{ name: 'Rajma', calories: 240, protein: 14, carbs: 42, fat: 4, rating: 4.3, desc: 'Kidney beans' }] },
-                4: { type: 'choice', veg: { name: 'Aloo Gobi', calories: 170, rating: 4.0 }, nonVeg: { name: 'Fish Curry', calories: 260, rating: 4.3 } },
-                5: { type: 'choice', veg: { name: 'Chole', calories: 240, rating: 4.5 }, nonVeg: { name: 'Chicken Masala', calories: 300, rating: 4.6 } },
-                6: { type: 'choice', veg: { name: 'Paneer Butter Masala', calories: 280, rating: 4.7 }, nonVeg: { name: 'Mutton Curry', calories: 340, rating: 4.8 } },
+                1: { type: 'choice', veg: { name: 'Paneer Sabzi', calories: 220, protein: 12, carbs: 8, fat: 16, rating: 4.2 }, nonVeg: { name: 'Chicken Curry', calories: 280, protein: 25, carbs: 10, fat: 16, rating: 4.4, popular: true } },
+                2: { type: 'choice', veg: { name: 'Mix Veg', calories: 160, protein: 5, carbs: 20, fat: 7, rating: 3.9 }, nonVeg: { name: 'Egg Curry', calories: 200, protein: 14, carbs: 8, fat: 13, rating: 4.1 } },
+                3: { type: 'veg', items: [{ name: 'Rajma', calories: 240, protein: 14, carbs: 42, fat: 4, rating: 4.3, desc: 'Kidney beans', popular: true }] },
+                4: { type: 'choice', veg: { name: 'Aloo Gobi', calories: 170, protein: 4, carbs: 25, fat: 7, rating: 4.0 }, nonVeg: { name: 'Fish Curry', calories: 260, protein: 22, carbs: 8, fat: 16, rating: 4.3 } },
+                5: { type: 'choice', veg: { name: 'Chole', calories: 240, protein: 12, carbs: 36, fat: 6, rating: 4.5, popular: true }, nonVeg: { name: 'Chicken Masala', calories: 300, protein: 26, carbs: 12, fat: 18, rating: 4.6 } },
+                6: { type: 'choice', veg: { name: 'Paneer Butter Masala', calories: 280, protein: 14, carbs: 12, fat: 20, rating: 4.7, popular: true }, nonVeg: { name: 'Mutton Curry', calories: 340, protein: 28, carbs: 10, fat: 22, rating: 4.8 } },
             }
         },
         snack: {
@@ -107,13 +124,13 @@ export default function Mess() {
                 { name: 'Tea', unit: 'cup', calories: 60, protein: 2, carbs: 10, fat: 2, desc: 'Milk tea', unlimited: true },
             ],
             weekly: {
-                0: { name: 'Samosa', calories: 240, rating: 4.3 },
-                1: { name: 'Pakora', calories: 210, rating: 4.2 },
-                2: { name: 'Bread Pakoda', calories: 220, rating: 4.1 },
-                3: { name: 'Kachori', calories: 260, rating: 4.3 },
-                4: { name: 'Cutlet', calories: 200, rating: 4.2 },
-                5: { name: 'Vada Pav', calories: 290, rating: 4.6 },
-                6: { name: 'Pani Puri', calories: 180, rating: 4.8 },
+                0: { name: 'Samosa', calories: 240, rating: 4.3, protein: 5, carbs: 28, fat: 12 },
+                1: { name: 'Pakora', calories: 210, rating: 4.2, protein: 4, carbs: 22, fat: 12 },
+                2: { name: 'Bread Pakoda', calories: 220, rating: 4.1, protein: 5, carbs: 24, fat: 11 },
+                3: { name: 'Kachori', calories: 260, rating: 4.3, protein: 5, carbs: 30, fat: 14 },
+                4: { name: 'Cutlet', calories: 200, rating: 4.2, protein: 6, carbs: 20, fat: 10 },
+                5: { name: 'Vada Pav', calories: 290, rating: 4.6, protein: 6, carbs: 36, fat: 14, popular: true },
+                6: { name: 'Pani Puri', calories: 180, rating: 4.8, protein: 3, carbs: 28, fat: 6, popular: true },
             }
         },
         dinner: {
@@ -123,21 +140,20 @@ export default function Mess() {
                 { name: 'Roti', unit: 'pc', calories: 70, protein: 2.5, carbs: 14, fat: 1, desc: 'Whole wheat roti', unlimited: true },
             ],
             weekly: {
-                0: { type: 'veg', items: [{ name: 'Seasonal Sabzi', calories: 150, rating: 3.9 }] },
-                1: { type: 'choice', veg: { name: 'Paneer Do Pyaza', calories: 240, rating: 4.1 }, nonVeg: { name: 'Chicken Curry', calories: 280, rating: 4.3 } },
-                2: { type: 'veg', items: [{ name: 'Aloo Matar', calories: 180, rating: 4.0 }] },
-                3: { type: 'veg', items: [{ name: 'Chana Masala', calories: 220, rating: 4.2 }] },
-                4: { type: 'special', veg: { name: 'Veg Biryani', calories: 420, rating: 4.7 }, nonVeg: { name: 'Chicken Biryani', calories: 520, rating: 4.9 }, extras: [{ name: 'Raita', calories: 60 }] },
-                5: { type: 'choice', veg: { name: 'Palak Paneer', calories: 240, rating: 4.4 }, nonVeg: { name: 'Egg Bhurji', calories: 220, rating: 4.2 } },
-                6: { type: 'veg', items: [{ name: 'Dal Makhani', calories: 260, rating: 4.6 }] },
+                0: { type: 'veg', items: [{ name: 'Seasonal Sabzi', calories: 150, protein: 4, carbs: 20, fat: 6, rating: 3.9 }] },
+                1: { type: 'choice', veg: { name: 'Paneer Do Pyaza', calories: 240, protein: 12, carbs: 10, fat: 18, rating: 4.1 }, nonVeg: { name: 'Chicken Curry', calories: 280, protein: 25, carbs: 10, fat: 16, rating: 4.3 } },
+                2: { type: 'veg', items: [{ name: 'Aloo Matar', calories: 180, protein: 5, carbs: 28, fat: 6, rating: 4.0 }] },
+                3: { type: 'veg', items: [{ name: 'Chana Masala', calories: 220, protein: 10, carbs: 34, fat: 5, rating: 4.2 }] },
+                4: { type: 'special', veg: { name: 'Veg Biryani', calories: 420, protein: 10, carbs: 68, fat: 12, rating: 4.7 }, nonVeg: { name: 'Chicken Biryani', calories: 520, protein: 24, carbs: 64, fat: 20, rating: 4.9, popular: true }, extras: [{ name: 'Raita', calories: 60, protein: 3, carbs: 4, fat: 3 }] },
+                5: { type: 'choice', veg: { name: 'Palak Paneer', calories: 240, protein: 14, carbs: 10, fat: 16, rating: 4.4, popular: true }, nonVeg: { name: 'Egg Bhurji', calories: 220, protein: 16, carbs: 6, fat: 16, rating: 4.2 } },
+                6: { type: 'veg', items: [{ name: 'Dal Makhani', calories: 260, protein: 12, carbs: 32, fat: 10, rating: 4.6, popular: true }] },
             }
         }
     };
 
+    const mealIcons = { breakfast: '🌅', lunch: '☀️', snack: '🍪', dinner: '🌙' };
+
     const updateQuantity = (itemName, delta) => {
-        // Allow updating quantities even if booked, to support adding extra items
-
-
         const key = `${selectedMeal}-${itemName}`;
         setQuantities(prev => {
             const currentQty = prev[key] || 0;
@@ -146,11 +162,8 @@ export default function Mess() {
         });
     };
 
-    const toggleMainItem = (itemName, type) => {
+    const toggleMainItem = (itemName) => {
         if (bookedMeals[selectedMeal] && selectedDay === todayIndex) return;
-
-        // For mains, we treat them as limited (0 or 1)
-        // If it's a choice meal, we ensure mutually exclusive selection
         const menu = messMenu[selectedMeal];
         const special = menu.weekly[selectedDay];
 
@@ -163,11 +176,8 @@ export default function Mess() {
 
             setQuantities(prev => {
                 const newState = { ...prev };
-
-                // If selecting current item
                 if (!newState[itemKey]) {
                     newState[itemKey] = 1;
-                    // Deselect other option
                     if (itemName === vegName && nonVegName) newState[nonVegKey] = 0;
                     if (itemName === nonVegName && vegName) newState[vegKey] = 0;
                 } else {
@@ -176,13 +186,48 @@ export default function Mess() {
                 return newState;
             });
         } else {
-            // Simple toggle for single items
             const key = `${selectedMeal}-${itemName}`;
-            setQuantities(prev => ({
-                ...prev,
-                [key]: prev[key] ? 0 : 1
-            }));
+            setQuantities(prev => ({ ...prev, [key]: prev[key] ? 0 : 1 }));
         }
+    };
+
+    // Calculate meal summary
+    const getMealSummary = () => {
+        let totalCal = 0, totalProtein = 0, totalCarbs = 0, totalFat = 0, itemCount = 0;
+        const menu = messMenu[selectedMeal];
+        const special = menu.weekly[selectedDay];
+
+        menu.staples.forEach(staple => {
+            const key = `${selectedMeal}-${staple.name}`;
+            const qty = quantities[key] || 0;
+            if (qty > 0) {
+                totalCal += staple.calories * qty;
+                totalProtein += (staple.protein || 0) * qty;
+                totalCarbs += (staple.carbs || 0) * qty;
+                totalFat += (staple.fat || 0) * qty;
+                itemCount += qty;
+            }
+        });
+
+        if (special) {
+            const checkItem = (item) => {
+                if (!item) return;
+                const key = `${selectedMeal}-${item.name}`;
+                if (quantities[key]) {
+                    totalCal += item.calories || 0;
+                    totalProtein += item.protein || 0;
+                    totalCarbs += item.carbs || 0;
+                    totalFat += item.fat || 0;
+                    itemCount++;
+                }
+            };
+            if (special.veg) checkItem(special.veg);
+            if (special.nonVeg) checkItem(special.nonVeg);
+            if (special.items) special.items.forEach(checkItem);
+            if (special.name) checkItem(special);
+        }
+
+        return { totalCal, totalProtein, totalCarbs, totalFat, itemCount };
     };
 
     const handleConfirmMeal = () => {
@@ -190,35 +235,27 @@ export default function Mess() {
         const menu = messMenu[selectedMeal];
         const special = menu.weekly[selectedDay];
 
-        // Add staples
         menu.staples.forEach(staple => {
             const key = `${selectedMeal}-${staple.name}`;
             const qty = quantities[key] || 0;
-            if (qty > 0) {
-                itemsToLog.push({ ...staple, quantity: qty });
-            }
+            if (qty > 0) itemsToLog.push({ ...staple, quantity: qty });
         });
 
-        // Add specials
         if (special) {
             if (special.type === 'choice' || special.type === 'special') {
                 const vegKey = `${selectedMeal}-${special.veg?.name}`;
                 const nonVegKey = `${selectedMeal}-${special.nonVeg?.name}`;
-
                 if (quantities[vegKey]) itemsToLog.push({ ...special.veg, quantity: 1 });
                 if (quantities[nonVegKey]) itemsToLog.push({ ...special.nonVeg, quantity: 1 });
-
                 if (special.extras) {
                     special.extras.forEach(extra => {
-                        if (quantities[vegKey] || quantities[nonVegKey]) {
-                            itemsToLog.push({ ...extra, quantity: 1 });
-                        }
+                        if (quantities[vegKey] || quantities[nonVegKey]) itemsToLog.push({ ...extra, quantity: 1 });
                     });
                 }
-            } else if (special.name) { // Single item
+            } else if (special.name) {
                 const key = `${selectedMeal}-${special.name}`;
                 if (quantities[key]) itemsToLog.push({ ...special, quantity: 1 });
-            } else if (special.items) { // Fixed list
+            } else if (special.items) {
                 special.items.forEach(item => {
                     const key = `${selectedMeal}-${item.name}`;
                     if (quantities[key]) itemsToLog.push({ ...item, quantity: 1 });
@@ -226,152 +263,200 @@ export default function Mess() {
             }
         }
 
-        // Log to tracker
         itemsToLog.forEach(item => {
             addFood(selectedMeal, {
                 name: item.name,
                 calories: item.calories * item.quantity,
-                protein: item.protein * item.quantity,
-                carbs: item.carbs * item.quantity,
-                fat: item.fat * item.quantity || 0
+                protein: (item.protein || 0) * item.quantity,
+                carbs: (item.carbs || 0) * item.quantity,
+                fat: (item.fat || 0) * item.quantity
             });
         });
 
         setBookedMeals({ ...bookedMeals, [selectedMeal]: true });
 
-        // 🎉 Celebration confetti animation (exact Beta version)
-        confetti({
-            particleCount: 30,
-            spread: 60,
-            origin: { y: 0.7 },
-            colors: ['#22c55e', '#16a34a', '#4ade80'],
-            ticks: 100,
-            gravity: 1.2
-        });
+        confetti({ particleCount: 50, spread: 70, origin: { y: 0.6 }, colors: ['#1DB954', '#16a34a', '#22c55e', '#4ade80'] });
 
-        // Clear quantities for this meal to reset UI and prevent double booking of same selection
         const newQuantities = { ...quantities };
         Object.keys(newQuantities).forEach(key => {
-            if (key.startsWith(selectedMeal)) {
-                delete newQuantities[key];
-            }
+            if (key.startsWith(selectedMeal)) delete newQuantities[key];
         });
         setQuantities(newQuantities);
     };
 
-    const renderStapleCounter = (item) => {
+    const renderStapleCard = (item, index) => {
         const key = `${selectedMeal}-${item.name}`;
         const qty = quantities[key] || 0;
-        const isBooked = bookedMeals[selectedMeal] && selectedDay === todayIndex;
         const isToday = selectedDay === todayIndex;
+        const calColor = getCalorieColor(item.calories);
 
         return (
-            <div
+            <motion.div
                 key={item.name}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
                 style={{
                     background: 'white',
-                    borderRadius: '12px',
-                    padding: '12px',
-                    marginBottom: '10px',
+                    borderRadius: '16px',
+                    padding: '16px',
+                    marginBottom: '12px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    border: qty > 0 ? '2px solid #1DB954' : '1px solid #EEEEEE',
-                    opacity: !isToday ? 0.8 : 1
-                }}
-            >
-                <div>
-                    <div style={{ fontWeight: '600', color: '#333', fontSize: '15px' }}>
-                        {item.name}
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#757575' }}>
-                        {item.calories} Cal / {item.unit}
-                    </div>
-                </div>
-
-                {isToday ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: '#F5F5F5', borderRadius: '8px', padding: '4px' }}>
-                        <button
-                            onClick={() => updateQuantity(item.name, -1)}
-                            disabled={qty === 0}
-                            style={{
-                                width: '28px', height: '28px', borderRadius: '6px', border: 'none',
-                                background: 'white', color: '#333', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                boxShadow: '0 1px 2px rgba(0,0,0,0.1)', cursor: qty === 0 ? 'default' : 'pointer'
-                            }}
-                        >
-                            <Minus size={16} />
-                        </button>
-                        <span style={{ fontWeight: '700', minWidth: '20px', textAlign: 'center' }}>{qty}</span>
-                        <button
-                            onClick={() => updateQuantity(item.name, 1)}
-                            style={{
-                                width: '28px', height: '28px', borderRadius: '6px', border: 'none',
-                                background: '#1DB954', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                boxShadow: '0 1px 2px rgba(0,0,0,0.1)', cursor: 'pointer'
-                            }}
-                        >
-                            <Plus size={16} />
-                        </button>
-                    </div>
-                ) : (
-                    <div style={{ fontSize: '13px', color: '#9E9E9E', fontStyle: 'italic' }}>
-                        Available
-                    </div>
-                )}
-            </div>
-        );
-    };
-
-    const renderMainItem = (item) => {
-        const key = `${selectedMeal}-${item.name}`;
-        const isSelected = quantities[key] > 0;
-        const isBooked = bookedMeals[selectedMeal] && selectedDay === todayIndex;
-        const isToday = selectedDay === todayIndex;
-
-        return (
-            <div
-                key={item.name}
-                onClick={() => isToday && !isBooked && toggleMainItem(item.name)}
-                style={{
-                    background: 'white',
-                    borderRadius: '12px',
-                    padding: '12px',
-                    marginBottom: '10px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    border: isSelected ? '2px solid #1DB954' : '1px solid #EEEEEE',
-                    cursor: isToday && !isBooked ? 'pointer' : 'default',
-                    opacity: !isToday ? 0.8 : 1
+                    border: qty > 0 ? '2px solid #1DB954' : '1px solid #E5E5E5',
+                    boxShadow: qty > 0 ? '0 4px 12px rgba(29, 185, 84, 0.15)' : '0 2px 8px rgba(0,0,0,0.04)',
+                    transition: 'all 0.3s ease'
                 }}
             >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    {isToday && (
-                        <div style={{
-                            width: '20px',
-                            height: '20px',
-                            borderRadius: '50%',
-                            border: isSelected ? '6px solid #1DB954' : '2px solid #BDBDBD',
-                            transition: 'all 0.2s'
-                        }} />
-                    )}
+                    <div style={{
+                        width: '48px', height: '48px', borderRadius: '12px',
+                        background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '24px'
+                    }}>
+                        {getEmoji(item.name)}
+                    </div>
                     <div>
-                        <div style={{ fontWeight: '600', color: '#333', fontSize: '15px' }}>
+                        <div style={{ fontWeight: '600', color: '#1a1a1a', fontSize: '15px', marginBottom: '4px' }}>
                             {item.name}
+                            {item.unlimited && <span style={{ fontSize: '10px', color: '#1DB954', marginLeft: '6px', background: '#E8F5E9', padding: '2px 6px', borderRadius: '4px' }}>∞</span>}
                         </div>
-                        <div style={{ fontSize: '12px', color: '#757575', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            {item.calories} Cal • Limited
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontSize: '12px', padding: '3px 8px', borderRadius: '6px', background: calColor.bg, color: calColor.text, fontWeight: '600' }}>
+                                {item.calories} Cal
+                            </span>
+                            <span style={{ fontSize: '11px', color: '#9ca3af' }}>per {item.unit}</span>
                         </div>
                     </div>
                 </div>
-                {item.rating && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', color: '#FFA000', fontWeight: '600' }}>
-                        <Star size={14} fill="#FFA000" />
-                        {item.rating}
+
+                {isToday && (
+                    <motion.div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#f5f5f5', borderRadius: '12px', padding: '6px' }}>
+                        <motion.button
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => updateQuantity(item.name, -1)}
+                            disabled={qty === 0}
+                            style={{
+                                width: '32px', height: '32px', borderRadius: '8px', border: 'none',
+                                background: qty > 0 ? 'white' : '#e5e5e5', color: qty > 0 ? '#333' : '#999',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                cursor: qty === 0 ? 'default' : 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                            }}
+                        >
+                            <Minus size={16} />
+                        </motion.button>
+                        <motion.span
+                            key={qty}
+                            initial={{ scale: 1.3 }}
+                            animate={{ scale: 1 }}
+                            style={{ fontWeight: '700', minWidth: '24px', textAlign: 'center', fontSize: '16px' }}
+                        >
+                            {qty}
+                        </motion.span>
+                        <motion.button
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => updateQuantity(item.name, 1)}
+                            style={{
+                                width: '32px', height: '32px', borderRadius: '8px', border: 'none',
+                                background: '#1DB954', color: 'white',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                cursor: 'pointer', boxShadow: '0 2px 4px rgba(29,185,84,0.3)'
+                            }}
+                        >
+                            <Plus size={16} />
+                        </motion.button>
+                    </motion.div>
+                )}
+            </motion.div>
+        );
+    };
+
+    const renderMainCard = (item, index) => {
+        if (!item) return null;
+        const key = `${selectedMeal}-${item.name}`;
+        const isSelected = quantities[key] > 0;
+        const isToday = selectedDay === todayIndex;
+        const isBooked = bookedMeals[selectedMeal] && isToday;
+        const calColor = getCalorieColor(item.calories);
+
+        return (
+            <motion.div
+                key={item.name}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 + index * 0.05 }}
+                whileHover={{ scale: isToday && !isBooked ? 1.01 : 1 }}
+                whileTap={{ scale: isToday && !isBooked ? 0.99 : 1 }}
+                onClick={() => isToday && !isBooked && toggleMainItem(item.name)}
+                style={{
+                    background: isSelected ? 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)' : 'white',
+                    borderRadius: '16px',
+                    padding: '16px',
+                    marginBottom: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    border: isSelected ? '2px solid #1DB954' : '1px solid #E5E5E5',
+                    cursor: isToday && !isBooked ? 'pointer' : 'default',
+                    boxShadow: isSelected ? '0 4px 12px rgba(29, 185, 84, 0.15)' : '0 2px 8px rgba(0,0,0,0.04)',
+                    position: 'relative',
+                    overflow: 'hidden'
+                }}
+            >
+                {item.popular && (
+                    <div style={{
+                        position: 'absolute', top: '8px', right: '8px',
+                        background: 'linear-gradient(135deg, #FF6B6B, #FF8E53)',
+                        color: 'white', fontSize: '9px', fontWeight: '700',
+                        padding: '3px 8px', borderRadius: '6px',
+                        display: 'flex', alignItems: 'center', gap: '3px'
+                    }}>
+                        <Flame size={10} /> HOT
                     </div>
                 )}
-            </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+                    {isToday && (
+                        <motion.div
+                            animate={{ scale: isSelected ? 1 : 1, borderWidth: isSelected ? '6px' : '2px' }}
+                            style={{
+                                width: '24px', height: '24px', borderRadius: '50%',
+                                border: `solid ${isSelected ? '#1DB954' : '#d1d5db'}`,
+                                background: isSelected ? '#1DB954' : 'transparent',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                flexShrink: 0
+                            }}
+                        >
+                            {isSelected && <Check size={12} color="white" />}
+                        </motion.div>
+                    )}
+                    <div style={{
+                        width: '48px', height: '48px', borderRadius: '12px',
+                        background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '24px', flexShrink: 0
+                    }}>
+                        {getEmoji(item.name)}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: '600', color: '#1a1a1a', fontSize: '15px', marginBottom: '4px' }}>
+                            {item.name}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: '12px', padding: '3px 8px', borderRadius: '6px', background: calColor.bg, color: calColor.text, fontWeight: '600' }}>
+                                {item.calories} Cal
+                            </span>
+                            {item.rating && (
+                                <span style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '12px', color: '#f59e0b', fontWeight: '600' }}>
+                                    <Star size={12} fill="#f59e0b" /> {item.rating}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </motion.div>
         );
     };
 
@@ -380,166 +465,174 @@ export default function Mess() {
     const isToday = selectedDay === todayIndex;
     const isBooked = bookedMeals[selectedMeal] && isToday;
     const hasSelection = isToday && Object.keys(quantities).filter(k => k.startsWith(selectedMeal) && quantities[k] > 0).length > 0;
+    const summary = getMealSummary();
 
     return (
         <>
-            <div style={{ background: '#FAFAFA', minHeight: '100vh' }}>
-                <div style={{ maxWidth: '600px', margin: '0 auto', padding: '20px', paddingBottom: '80px' }}>
+            <div style={{ background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)', minHeight: '100vh' }}>
+                <div style={{ maxWidth: '600px', margin: '0 auto', padding: '20px', paddingBottom: '180px' }}>
+
                     {/* Header */}
-                    <SlideUp delay={0}>
-                        <div style={{ marginBottom: '8px' }}>
-                            <h1 style={{ fontSize: '22px', fontWeight: 'bold', color: '#1A1A1A', marginBottom: '4px' }}>Mess Menu</h1>
-                            <p style={{ fontSize: '14px', color: '#757575' }}>
-                                Select a day to view the menu. Booking is only available for today.
-                            </p>
-                        </div>
-                    </SlideUp>
+                    <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: '20px' }}>
+                        <h1 style={{ fontSize: '26px', fontWeight: '800', color: '#0f172a', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            {mealIcons[selectedMeal]} Mess Menu
+                        </h1>
+                        <p style={{ fontSize: '14px', color: '#64748b' }}>
+                            {isToday ? "Select items for today's meal" : "Viewing menu for another day"}
+                        </p>
+                    </motion.div>
 
                     {/* Day Selector */}
-                    <SlideUp delay={0.1}>
-                        <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '16px', marginBottom: '16px' }}>
-                            {days.map((day, index) => {
-                                const isSelected = selectedDay === index;
-                                const isTodayDay = index === getTodayIndex();
-                                return (
-                                    <button
-                                        key={day}
-                                        onClick={() => setSelectedDay(index)}
-                                        style={{
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            padding: '10px 14px',
-                                            borderRadius: '12px',
-                                            border: isSelected ? 'none' : '1px solid #E0E0E0',
-                                            background: isSelected ? '#1DB954' : 'white',
-                                            color: isSelected ? 'white' : '#757575',
-                                            flexShrink: 0,
-                                            minWidth: '52px',
-                                            position: 'relative',
-                                            cursor: 'pointer'
-                                        }}
-                                    >
-                                        <span style={{ fontSize: '12px', fontWeight: '500', marginBottom: '2px' }}>{day}</span>
-                                        <span style={{ fontSize: '18px', fontWeight: '700' }}>{dates[index]}</span>
-                                        {isTodayDay && <span style={{ position: 'absolute', bottom: '6px', left: '50%', transform: 'translateX(-50%)', width: '4px', height: '4px', background: isSelected ? 'white' : '#1DB954', borderRadius: '50%' }}></span>}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </SlideUp>
-
-                    {/* Meal Type Selector with Sliding Indicator */}
-                    <SlideUp delay={0.2}>
-                        <div style={{
-                            background: 'white',
-                            padding: '4px',
-                            borderRadius: '30px',
-                            display: 'flex',
-                            marginBottom: '24px',
-                            border: '1px solid #E0E0E0',
-                            position: 'relative'
-                        }}>
-                            {/* Sliding Indicator */}
-                            <div style={{
-                                position: 'absolute',
-                                top: '4px',
-                                left: `calc(${['breakfast', 'lunch', 'snack', 'dinner'].indexOf(selectedMeal) * 25}% + 4px)`,
-                                width: 'calc(25% - 8px)',
-                                height: 'calc(100% - 8px)',
-                                background: '#1DB954',
-                                borderRadius: '26px',
-                                transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                zIndex: 0
-                            }} />
-                            {['breakfast', 'lunch', 'snack', 'dinner'].map((meal) => (
-                                <button
-                                    key={meal}
-                                    onClick={() => setSelectedMeal(meal)}
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+                        style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '16px', marginBottom: '16px' }}>
+                        {days.map((day, index) => {
+                            const isSelected = selectedDay === index;
+                            const isTodayDay = index === todayIndex;
+                            return (
+                                <motion.button
+                                    key={day}
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={() => setSelectedDay(index)}
                                     style={{
-                                        flex: 1,
-                                        padding: '10px',
-                                        borderRadius: '26px',
-                                        border: 'none',
-                                        background: 'transparent',
-                                        color: selectedMeal === meal ? 'white' : '#757575',
-                                        fontWeight: '600',
-                                        textTransform: 'capitalize',
-                                        fontSize: '14px',
-                                        cursor: 'pointer',
-                                        transition: 'color 0.3s ease',
-                                        position: 'relative',
-                                        zIndex: 1
+                                        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                                        padding: '10px 14px', borderRadius: '14px',
+                                        border: isSelected ? 'none' : '1px solid #e2e8f0',
+                                        background: isSelected ? 'linear-gradient(135deg, #1DB954, #16a34a)' : 'white',
+                                        color: isSelected ? 'white' : '#64748b',
+                                        flexShrink: 0, minWidth: '54px', position: 'relative', cursor: 'pointer',
+                                        boxShadow: isSelected ? '0 4px 12px rgba(29,185,84,0.3)' : '0 1px 3px rgba(0,0,0,0.05)'
                                     }}
                                 >
-                                    {meal.charAt(0).toUpperCase() + meal.slice(1)}
-                                </button>
-                            ))}
-                        </div>
-                    </SlideUp>
+                                    <span style={{ fontSize: '11px', fontWeight: '500', marginBottom: '2px' }}>{day}</span>
+                                    <span style={{ fontSize: '18px', fontWeight: '700' }}>{dates[index]}</span>
+                                    {isTodayDay && <span style={{ position: 'absolute', bottom: '5px', width: '5px', height: '5px', background: isSelected ? 'white' : '#1DB954', borderRadius: '50%' }} />}
+                                </motion.button>
+                            );
+                        })}
+                    </motion.div>
 
-                    {/* Menu Items */}
-                    <SlideUp delay={0.3}>
-                        <div>
-                            <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#1A1A1A', marginBottom: '16px' }}>
-                                Select Items to Eat
-                            </h2>
-
-                            {/* Staples First */}
-                            <div style={{ marginBottom: '24px' }}>
-                                {currentMenu.staples.map(renderStapleCounter)}
-                            </div>
-
-                            {/* Specials After */}
-                            {dailySpecial && (
-                                <div>
-                                    {(dailySpecial.type === 'choice' || dailySpecial.type === 'special') ? (
-                                        <>
-                                            {renderMainItem(dailySpecial.veg)}
-                                            {dailySpecial.nonVeg && renderMainItem(dailySpecial.nonVeg)}
-                                        </>
-                                    ) : dailySpecial.items ? (
-                                        dailySpecial.items.map(renderMainItem)
-                                    ) : (
-                                        renderMainItem(dailySpecial)
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    </SlideUp>
-
-                    {/* Bottom Action Button */}
-                    <SlideUp delay={0.4}>
-                        <div style={{ marginTop: '24px', paddingBottom: '100px' }}>
+                    {/* Meal Type Selector */}
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
+                        style={{ background: 'white', padding: '5px', borderRadius: '16px', display: 'flex', marginBottom: '24px', boxShadow: '0 2px 10px rgba(0,0,0,0.06)', position: 'relative' }}>
+                        <motion.div
+                            layoutId="mealIndicator"
+                            style={{
+                                position: 'absolute', top: '5px',
+                                left: `calc(${['breakfast', 'lunch', 'snack', 'dinner'].indexOf(selectedMeal) * 25}% + 5px)`,
+                                width: 'calc(25% - 10px)', height: 'calc(100% - 10px)',
+                                background: 'linear-gradient(135deg, #1DB954, #16a34a)',
+                                borderRadius: '12px', zIndex: 0
+                            }}
+                            transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                        />
+                        {['breakfast', 'lunch', 'snack', 'dinner'].map((meal) => (
                             <button
-                                onClick={handleConfirmMeal}
-                                disabled={!hasSelection && !isBooked}
+                                key={meal}
+                                onClick={() => setSelectedMeal(meal)}
                                 style={{
-                                    width: '100%',
-                                    padding: '16px',
-                                    background: hasSelection ? '#1DB954' : (isBooked ? '#E8F5E9' : '#1DB954'),
-                                    color: hasSelection ? 'white' : (isBooked ? '#1DB954' : 'white'),
-                                    border: 'none',
-                                    borderRadius: '30px',
-                                    fontWeight: '600',
-                                    fontSize: '16px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: '8px',
-                                    cursor: hasSelection ? 'pointer' : (isBooked ? 'default' : 'pointer'),
-                                    transition: 'all 0.3s'
+                                    flex: 1, padding: '12px 8px', borderRadius: '12px', border: 'none',
+                                    background: 'transparent', color: selectedMeal === meal ? 'white' : '#64748b',
+                                    fontWeight: '600', fontSize: '13px', cursor: 'pointer',
+                                    position: 'relative', zIndex: 1, transition: 'color 0.2s'
                                 }}
                             >
-                                {isBooked && !hasSelection ?
-                                    <><Check size={20} /> Meal Logged Successfully!</> :
-                                    <><Utensils size={20} /> Log Meal</>
-                                }
+                                <span style={{ marginRight: '4px' }}>{mealIcons[meal]}</span>
+                                {meal.charAt(0).toUpperCase() + meal.slice(1)}
                             </button>
+                        ))}
+                    </motion.div>
+
+                    {/* Menu Items */}
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
+                        <h2 style={{ fontSize: '16px', fontWeight: '700', color: '#0f172a', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Utensils size={18} /> Select Items
+                        </h2>
+
+                        {/* Staples */}
+                        <div style={{ marginBottom: '20px' }}>
+                            <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '10px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                Unlimited Items
+                            </p>
+                            {currentMenu.staples.map((item, i) => renderStapleCard(item, i))}
                         </div>
-                    </SlideUp>
+
+                        {/* Specials */}
+                        {dailySpecial && (
+                            <div>
+                                <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '10px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                    Today's Special {dailySpecial.type === 'choice' && '(Pick One)'}
+                                </p>
+                                {(dailySpecial.type === 'choice' || dailySpecial.type === 'special') ? (
+                                    <>
+                                        {renderMainCard(dailySpecial.veg, 0)}
+                                        {dailySpecial.nonVeg && renderMainCard(dailySpecial.nonVeg, 1)}
+                                    </>
+                                ) : dailySpecial.items ? (
+                                    dailySpecial.items.map((item, i) => renderMainCard(item, i))
+                                ) : (
+                                    renderMainCard(dailySpecial, 0)
+                                )}
+                            </div>
+                        )}
+                    </motion.div>
                 </div>
+
+                {/* Floating Meal Summary */}
+                <AnimatePresence>
+                    {(hasSelection || isBooked) && (
+                        <motion.div
+                            initial={{ y: 100, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: 100, opacity: 0 }}
+                            style={{
+                                position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)',
+                                width: 'calc(100% - 40px)', maxWidth: '560px',
+                                background: 'white', borderRadius: '20px',
+                                padding: '16px 20px', boxShadow: '0 -4px 30px rgba(0,0,0,0.15)',
+                                zIndex: 100
+                            }}
+                        >
+                            {!isBooked && (
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                                    <div style={{ display: 'flex', gap: '16px' }}>
+                                        <div style={{ textAlign: 'center' }}>
+                                            <div style={{ fontSize: '18px', fontWeight: '700', color: '#1DB954' }}>{summary.totalCal}</div>
+                                            <div style={{ fontSize: '10px', color: '#94a3b8' }}>Cal</div>
+                                        </div>
+                                        <div style={{ textAlign: 'center' }}>
+                                            <div style={{ fontSize: '18px', fontWeight: '700', color: '#3b82f6' }}>{summary.totalProtein}g</div>
+                                            <div style={{ fontSize: '10px', color: '#94a3b8' }}>Protein</div>
+                                        </div>
+                                        <div style={{ textAlign: 'center' }}>
+                                            <div style={{ fontSize: '18px', fontWeight: '700', color: '#f59e0b' }}>{summary.totalCarbs}g</div>
+                                            <div style={{ fontSize: '10px', color: '#94a3b8' }}>Carbs</div>
+                                        </div>
+                                    </div>
+                                    <div style={{ textAlign: 'right' }}>
+                                        <div style={{ fontSize: '12px', color: '#64748b' }}>{summary.itemCount} items</div>
+                                    </div>
+                                </div>
+                            )}
+                            <motion.button
+                                whileTap={{ scale: 0.98 }}
+                                onClick={handleConfirmMeal}
+                                disabled={!hasSelection && isBooked}
+                                style={{
+                                    width: '100%', padding: '14px',
+                                    background: isBooked ? '#E8F5E9' : 'linear-gradient(135deg, #1DB954, #16a34a)',
+                                    color: isBooked ? '#1DB954' : 'white',
+                                    border: 'none', borderRadius: '14px',
+                                    fontWeight: '700', fontSize: '15px',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                                    cursor: hasSelection ? 'pointer' : 'default',
+                                    boxShadow: isBooked ? 'none' : '0 4px 15px rgba(29,185,84,0.4)'
+                                }}
+                            >
+                                {isBooked && !hasSelection ? <><Check size={20} /> Meal Logged!</> : <><Utensils size={20} /> Log {selectedMeal.charAt(0).toUpperCase() + selectedMeal.slice(1)}</>}
+                            </motion.button>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
             <BottomNav />
         </>

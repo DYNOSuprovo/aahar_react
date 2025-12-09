@@ -30,15 +30,18 @@ export default function BottomNav() {
                 bottom: 0,
                 left: 0,
                 right: 0,
-                backgroundColor: 'white',
-                borderTop: '1px solid #f0f0f0',
+                background: 'linear-gradient(180deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.5) 100%)',
+                backdropFilter: 'saturate(180%) blur(30px)',
+                WebkitBackdropFilter: 'saturate(180%) blur(30px)',
+                borderTop: '0.5px solid rgba(255, 255, 255, 0.3)',
+                boxShadow: '0 -1px 0 rgba(0,0,0,0.02)',
                 zIndex: 9999
             }}
         >
             <div style={{
                 maxWidth: '480px',
                 margin: '0 auto',
-                padding: '8px 16px',
+                padding: '8px 16px 20px 16px',
                 position: 'relative'
             }}>
                 {/* Sliding Indicator */}

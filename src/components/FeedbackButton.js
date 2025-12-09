@@ -1,10 +1,15 @@
 "use client";
 import { useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { MessageCircle } from 'lucide-react';
 import FeedbackModal from './FeedbackModal';
 
 export default function FeedbackButton() {
     const [isOpen, setIsOpen] = useState(false);
+    const pathname = usePathname();
+
+    // Hide on specific pages
+    if (['/', '/login', '/signup', '/onboarding', '/chat'].includes(pathname)) return null;
 
     return (
         <>

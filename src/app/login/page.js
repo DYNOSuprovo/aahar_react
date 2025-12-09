@@ -1,26 +1,116 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Mail, Facebook } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Mail, Lock, Eye, EyeOff, User, ArrowRight, Sparkles } from 'lucide-react';
 import { useUser } from '../../context/UserContext';
+
+// Floating food icons component
+const FloatingIcons = () => {
+    const foods = ['🥗', '🍎', '🥑', '🍳', '🥕', '🍊', '🥬', '🍇'];
+    return (
+        <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+            {foods.map((food, i) => (
+                <motion.span
+                    key={i}
+                    initial={{
+                        x: Math.random() * 400,
+                        y: -50,
+                        opacity: 0.6,
+                        rotate: 0
+                    }}
+                    animate={{
+                        y: '100vh',
+                        rotate: 360,
+                        opacity: [0.6, 0.8, 0.6]
+                    }}
+                    transition={{
+                        duration: 10 + Math.random() * 10,
+                        repeat: Infinity,
+                        delay: i * 1.5,
+                        ease: "linear"
+                    }}
+                    style={{
+                        position: 'absolute',
+                        fontSize: '32px',
+                        left: `${(i * 12) + 5}%`
+                    }}
+                >
+                    {food}
+                </motion.span>
+            ))}
+        </div>
+    );
+};
+
+// Password strength indicator
+const PasswordStrength = ({ password }) => {
+    const getStrength = () => {
+        if (!password) return 0;
+        let strength = 0;
+        if (password.length >= 6) strength++;
+        if (password.length >= 8) strength++;
+        if (/[A-Z]/.test(password)) strength++;
+        if (/[0-9]/.test(password)) strength++;
+        if (/[^A-Za-z0-9]/.test(password)) strength++;
+        return strength;
+    };
+
+    const strength = getStrength();
+    const colors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#1DB954'];
+    const labels = ['Weak', 'Fair', 'Good', 'Strong', 'Excellent'];
+
+    if (!password) return null;
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            style={{ marginTop: '8px' }}
+        >
+            <div style={{ display: 'flex', gap: '4px', marginBottom: '4px' }}>
+                {[1, 2, 3, 4, 5].map((i) => (
+                    <motion.div
+                        key={i}
+                        initial={{ scaleX: 0 }}
+                        animate={{ scaleX: strength >= i ? 1 : 0.3 }}
+                        transition={{ delay: i * 0.1 }}
+                        style={{
+                            flex: 1,
+                            height: '4px',
+                            borderRadius: '2px',
+                            background: strength >= i ? colors[strength - 1] : '#e0e0e0',
+                            transformOrigin: 'left'
+                        }}
+                    />
+                ))}
+            </div>
+            <span style={{ fontSize: '11px', color: colors[strength - 1] || '#999' }}>
+                {labels[strength - 1] || ''}
+            </span>
+        </motion.div>
+    );
+};
+
 
 export default function Login() {
     const [isLogin, setIsLogin] = useState(true);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [name, setName] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [focusedInput, setFocusedInput] = useState(null);
     const router = useRouter();
     const { isOnboarded, updateProfile } = useUser();
 
     const handleAuth = (e) => {
         if (e) e.preventDefault();
 
-        // If logging in with email, save it
         if (email) {
             updateProfile('email', email);
-            // Extract name from email for default
             const nameFromEmail = email.split('@')[0];
-            updateProfile('name', nameFromEmail.charAt(0).toUpperCase() + nameFromEmail.slice(1));
+            updateProfile('name', name || nameFromEmail.charAt(0).toUpperCase() + nameFromEmail.slice(1));
         }
 
         if (isOnboarded) {
@@ -30,153 +120,353 @@ export default function Login() {
         }
     };
 
+    const inputStyle = (isFocused) => ({
+        width: '100%',
+        padding: '16px 16px 16px 48px',
+        borderRadius: '16px',
+        border: `2px solid ${isFocused ? '#1DB954' : 'rgba(255,255,255,0.2)'}`,
+        background: 'rgba(255,255,255,0.1)',
+        backdropFilter: 'blur(10px)',
+        fontSize: '16px',
+        color: '#333',
+        outline: 'none',
+        transition: 'all 0.3s ease',
+        boxShadow: isFocused ? '0 0 0 4px rgba(29, 185, 84, 0.1)' : 'none'
+    });
+
     return (
-        <div style={{ padding: '40px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: '100vh' }}>
-            <h1 style={{ fontSize: '24px', marginBottom: '8px', fontWeight: 'bold' }}>Welcome to Aahar</h1>
-            <p style={{ color: '#757575', marginBottom: '32px' }}>Your journey to a healthier you starts here</p>
+        <div style={{
+            minHeight: '100vh',
+            display: 'flex',
+            flexDirection: 'column',
+            background: 'linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 50%, #A5D6A7 100%)',
+            position: 'relative',
+            overflow: 'hidden'
+        }}>
 
-            {/* Toggle */}
             <div style={{
-                background: '#F5F5F5',
-                borderRadius: '25px',
-                padding: '4px',
+                flex: 1,
                 display: 'flex',
-                width: '100%',
-                marginBottom: '40px'
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '40px 24px',
+                position: 'relative',
+                zIndex: 1
             }}>
-                <button
-                    onClick={() => setIsLogin(true)}
+                {/* Logo */}
+                <motion.div
+                    initial={{ y: -30, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ type: "spring", stiffness: 200 }}
+                    style={{ marginBottom: '32px', textAlign: 'center' }}
+                >
+                    <h1 style={{
+                        fontSize: '36px',
+                        fontWeight: '800',
+                        color: '#1DB954',
+                        fontFamily: 'serif'
+                    }}>
+                        Aahar
+                    </h1>
+                    <p style={{ color: '#666', fontSize: '14px' }}>
+                        Your journey to a healthier you
+                    </p>
+                </motion.div>
+
+                {/* Blended Gradient Card */}
+                <motion.div
+                    initial={{ y: 40, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.2, type: "spring", stiffness: 100 }}
                     style={{
-                        flex: 1,
-                        padding: '10px',
-                        borderRadius: '20px',
-                        border: 'none',
-                        background: isLogin ? 'var(--primary-green)' : 'transparent',
-                        color: isLogin ? 'white' : '#757575',
-                        fontWeight: '600',
-                        cursor: 'pointer'
+                        width: '100%',
+                        maxWidth: '400px',
+                        background: 'linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(232,245,233,0.9) 50%, rgba(200,230,201,0.85) 100%)',
+                        backdropFilter: 'blur(20px)',
+                        borderRadius: '32px',
+                        padding: '32px 24px',
+                        boxShadow: '0 8px 32px rgba(29, 185, 84, 0.08), inset 0 1px 0 rgba(255,255,255,0.6)',
+                        border: 'none'
                     }}
                 >
-                    Login
-                </button>
-                <button
-                    onClick={() => setIsLogin(false)}
-                    style={{
-                        flex: 1,
-                        padding: '10px',
-                        borderRadius: '20px',
-                        border: 'none',
-                        background: !isLogin ? 'var(--primary-green)' : 'transparent',
-                        color: !isLogin ? 'white' : '#757575',
-                        fontWeight: '600',
-                        cursor: 'pointer'
-                    }}
-                >
-                    Sign-up
-                </button>
-            </div>
-
-            <h2 style={{ marginBottom: '24px', alignSelf: 'flex-start' }}>
-                {isLogin ? 'Log In to Your Account' : 'Create an Account'}
-            </h2>
-
-            <form onSubmit={handleAuth} style={{ width: '100%' }}>
-                <input
-                    type="email"
-                    placeholder="Email Address"
-                    className="input-field"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                />
-                <input
-                    type="password"
-                    placeholder="Password"
-                    className="input-field"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                />
-
-                {isLogin && (
-                    <div style={{ textAlign: 'right', marginBottom: '24px' }}>
-                        <a href="#" style={{ color: 'var(--primary-green)', fontSize: '14px' }}>Forgot Password?</a>
+                    {/* Toggle */}
+                    <div style={{
+                        background: 'rgba(0,0,0,0.05)',
+                        borderRadius: '16px',
+                        padding: '4px',
+                        display: 'flex',
+                        marginBottom: '28px',
+                        position: 'relative'
+                    }}>
+                        <motion.div
+                            layout
+                            style={{
+                                position: 'absolute',
+                                top: '4px',
+                                left: isLogin ? '4px' : 'calc(50% + 2px)',
+                                width: 'calc(50% - 6px)',
+                                height: 'calc(100% - 8px)',
+                                background: 'linear-gradient(135deg, #1DB954 0%, #0d7a3a 100%)',
+                                borderRadius: '12px',
+                                boxShadow: '0 4px 12px rgba(29, 185, 84, 0.3)'
+                            }}
+                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                        />
+                        <button
+                            onClick={() => setIsLogin(true)}
+                            style={{
+                                flex: 1,
+                                padding: '12px',
+                                border: 'none',
+                                background: 'transparent',
+                                color: isLogin ? 'white' : '#666',
+                                fontWeight: '600',
+                                cursor: 'pointer',
+                                position: 'relative',
+                                zIndex: 1,
+                                transition: 'color 0.3s'
+                            }}
+                        >
+                            Login
+                        </button>
+                        <button
+                            onClick={() => setIsLogin(false)}
+                            style={{
+                                flex: 1,
+                                padding: '12px',
+                                border: 'none',
+                                background: 'transparent',
+                                color: !isLogin ? 'white' : '#666',
+                                fontWeight: '600',
+                                cursor: 'pointer',
+                                position: 'relative',
+                                zIndex: 1,
+                                transition: 'color 0.3s'
+                            }}
+                        >
+                            Sign Up
+                        </button>
                     </div>
-                )}
 
-                <button type="submit" className="btn" style={{ marginBottom: '24px' }}>
-                    {isLogin ? 'Login' : 'Sign Up'}
-                </button>
-            </form>
+                    <AnimatePresence mode="wait">
+                        <motion.form
+                            key={isLogin ? 'login' : 'signup'}
+                            initial={{ opacity: 0, x: isLogin ? -20 : 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: isLogin ? 20 : -20 }}
+                            transition={{ duration: 0.2 }}
+                            onSubmit={handleAuth}
+                        >
+                            {/* Name field for signup */}
+                            {!isLogin && (
+                                <motion.div
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: 'auto' }}
+                                    style={{ marginBottom: '16px', position: 'relative' }}
+                                >
+                                    <User size={20} color="#999" style={{ position: 'absolute', left: '16px', top: '18px' }} />
+                                    <input
+                                        type="text"
+                                        placeholder="Full Name"
+                                        value={name}
+                                        onChange={(e) => setName(e.target.value)}
+                                        onFocus={() => setFocusedInput('name')}
+                                        onBlur={() => setFocusedInput(null)}
+                                        style={inputStyle(focusedInput === 'name')}
+                                    />
+                                </motion.div>
+                            )}
 
-            <div style={{ width: '100%', textAlign: 'center', borderTop: '1px solid #eee', paddingTop: '24px' }}>
-                <style>{`
-                    @keyframes pulse {
-                        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(46, 125, 50, 0.4); }
-                        70% { transform: scale(1.02); box-shadow: 0 0 0 10px rgba(46, 125, 50, 0); }
-                        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(46, 125, 50, 0); }
-                    }
-                `}</style>
+                            {/* Email */}
+                            <div style={{ marginBottom: '16px', position: 'relative' }}>
+                                <Mail size={20} color="#999" style={{ position: 'absolute', left: '16px', top: '18px' }} />
+                                <input
+                                    type="email"
+                                    placeholder="Email Address"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    onFocus={() => setFocusedInput('email')}
+                                    onBlur={() => setFocusedInput(null)}
+                                    style={inputStyle(focusedInput === 'email')}
+                                    required
+                                />
+                            </div>
 
-                <button className="btn-interactive" style={{
-                    marginBottom: '16px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '12px',
-                    border: 'none',
-                    background: 'transparent',
-                    color: '#DB4437',
-                    fontWeight: '600',
-                    fontSize: '15px',
-                    padding: '12px',
-                    cursor: 'pointer'
-                }}>
-                    <Mail size={22} />
-                    Continue with Gmail
-                </button>
+                            {/* Password */}
+                            <div style={{ marginBottom: '8px', position: 'relative' }}>
+                                <Lock size={20} color="#999" style={{ position: 'absolute', left: '16px', top: '18px' }} />
+                                <input
+                                    type={showPassword ? "text" : "password"}
+                                    placeholder="Password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    onFocus={() => setFocusedInput('password')}
+                                    onBlur={() => setFocusedInput(null)}
+                                    style={{ ...inputStyle(focusedInput === 'password'), paddingRight: '48px' }}
+                                    required
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    style={{
+                                        position: 'absolute',
+                                        right: '16px',
+                                        top: '18px',
+                                        background: 'none',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        color: '#999'
+                                    }}
+                                >
+                                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                </button>
+                            </div>
 
-                <button className="btn-interactive" style={{
-                    marginBottom: '16px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '12px',
-                    border: 'none',
-                    background: 'transparent',
-                    color: '#4267B2',
-                    fontWeight: '600',
-                    fontSize: '15px',
-                    padding: '12px',
-                    cursor: 'pointer'
-                }}>
-                    <Facebook size={22} />
-                    Continue with Facebook
-                </button>
+                            {/* Password Strength for Signup */}
+                            {!isLogin && <PasswordStrength password={password} />}
 
-                <button
-                    onClick={() => handleAuth(null)}
-                    className="btn-interactive"
-                    style={{
-                        marginTop: '24px',
+                            {/* Forgot Password */}
+                            {isLogin && (
+                                <div style={{ textAlign: 'right', marginBottom: '24px', marginTop: '12px' }}>
+                                    <a href="#" style={{ color: '#1DB954', fontSize: '14px', fontWeight: '500' }}>
+                                        Forgot Password?
+                                    </a>
+                                </div>
+                            )}
+
+                            {/* Submit Button */}
+                            <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                type="submit"
+                                style={{
+                                    width: '100%',
+                                    padding: '16px',
+                                    background: 'linear-gradient(135deg, #1DB954 0%, #0d7a3a 100%)',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '16px',
+                                    fontSize: '16px',
+                                    fontWeight: '700',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '8px',
+                                    boxShadow: '0 4px 20px rgba(29, 185, 84, 0.3)',
+                                    marginTop: !isLogin ? '24px' : '0'
+                                }}
+                            >
+                                {isLogin ? 'Login' : 'Create Account'}
+                                <ArrowRight size={18} />
+                            </motion.button>
+                        </motion.form>
+                    </AnimatePresence>
+
+                    {/* Divider */}
+                    <div style={{
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '8px',
-                        width: '100%',
-                        padding: '14px',
-                        borderRadius: '12px',
-                        border: 'none',
-                        background: 'linear-gradient(135deg, #1DB954 0%, #43A047 100%)',
-                        color: 'white',
-                        fontWeight: 'bold',
-                        cursor: 'pointer',
-                        boxShadow: '0 4px 12px rgba(46, 125, 50, 0.3)',
-                        animation: 'pulse 2s infinite'
+                        margin: '24px 0',
+                        gap: '16px'
+                    }}>
+                        <div style={{ flex: 1, height: '1px', background: 'rgba(0,0,0,0.1)' }} />
+                        <span style={{ color: '#999', fontSize: '12px' }}>or continue with</span>
+                        <div style={{ flex: 1, height: '1px', background: 'rgba(0,0,0,0.1)' }} />
+                    </div>
+
+                    {/* Social Buttons */}
+                    <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
+                        <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            style={{
+                                flex: 1,
+                                padding: '14px',
+                                borderRadius: '12px',
+                                border: 'none',
+                                background: '#DB4437',
+                                color: 'white',
+                                fontWeight: '600',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '8px',
+                                fontSize: '14px'
+                            }}
+                        >
+                            <Mail size={18} />
+                            Google
+                        </motion.button>
+                        <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            style={{
+                                flex: 1,
+                                padding: '14px',
+                                borderRadius: '12px',
+                                border: 'none',
+                                background: '#4267B2',
+                                color: 'white',
+                                fontWeight: '600',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '8px',
+                                fontSize: '14px'
+                            }}
+                        >
+                            <span style={{ fontWeight: '800' }}>f</span>
+                            Facebook
+                        </motion.button>
+                    </div>
+
+                    {/* Guest Login */}
+                    <motion.button
+                        onClick={() => handleAuth(null)}
+                        whileHover={{ scale: 1.02, background: 'rgba(29, 185, 84, 0.1)' }}
+                        whileTap={{ scale: 0.98 }}
+                        style={{
+                            width: '100%',
+                            padding: '14px',
+                            borderRadius: '12px',
+                            border: '2px solid #1DB954',
+                            background: 'transparent',
+                            color: '#1DB954',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px'
+                        }}
+                    >
+                        <Sparkles size={18} />
+                        Continue as Guest
+                    </motion.button>
+                </motion.div>
+
+                {/* Terms */}
+                <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.5 }}
+                    style={{
+                        marginTop: '24px',
+                        fontSize: '12px',
+                        color: '#666',
+                        textAlign: 'center',
+                        maxWidth: '300px'
                     }}
                 >
-                    Continue as Guest
-                </button>
+                    By continuing, you agree to our{' '}
+                    <Link href="/privacy" style={{ color: '#1DB954' }}>Terms of Service</Link>
+                    {' '}and{' '}
+                    <Link href="/privacy" style={{ color: '#1DB954' }}>Privacy Policy</Link>
+                </motion.p>
             </div>
         </div>
     );

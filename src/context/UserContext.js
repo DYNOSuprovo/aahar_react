@@ -35,9 +35,9 @@ export function UserProvider({ children }) {
     });
 
     const [preferences, setPreferences] = useState({
-        vegetarian: true,
+        vegetarian: false,
         glutenFree: false,
-        dairyFree: true,
+        dairyFree: false,
         lowCarb: false,
     });
 
