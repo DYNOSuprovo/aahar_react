@@ -1,28 +1,44 @@
 "use client";
 import { useState } from 'react';
-import { X, Star, Send } from 'lucide-react';
+import { X, Star, Send, Loader2 } from 'lucide-react';
+import { saveFeedback } from '../lib/firebase';
+import { useAuth } from '../context/AuthContext';
+import { useUser } from '../context/UserContext';
 
 export default function FeedbackModal({ isOpen, onClose }) {
     const [rating, setRating] = useState(0);
     const [hoverRating, setHoverRating] = useState(0);
     const [feedback, setFeedback] = useState('');
     const [submitted, setSubmitted] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Get user info - hooks must be called unconditionally
+    const { currentUser } = useAuth();
+    const { user } = useUser();
 
     if (!isOpen) return null;
 
-    const handleSubmit = () => {
-        // Track in analytics
-        if (typeof window !== 'undefined' && window.gtag) {
-            window.gtag('event', 'feedback_submitted', {
-                event_category: 'user_feedback',
-                event_label: `rating_${rating}`,
-                value: rating,
-            });
+    const handleSubmit = async () => {
+        if (isSubmitting) return;
+
+        setIsSubmitting(true);
+
+        // Simple feedback data - only name/id and feedback
+        const feedbackData = {
+            rating,
+            comment: feedback.trim(),
+            userName: user?.name || currentUser?.displayName || 'Anonymous',
+            userEmail: user?.email || currentUser?.email || null
+        };
+
+        // Save to Realtime Database
+        const result = await saveFeedback(currentUser?.uid || null, feedbackData);
+
+        if (result.success) {
+            console.log('Feedback saved');
         }
 
-        // In production, you can send this to a backend/Google Forms/etc
-        console.log('Feedback submitted:', { rating, feedback });
-
+        setIsSubmitting(false);
         setSubmitted(true);
         setTimeout(() => {
             onClose();
@@ -141,7 +157,7 @@ export default function FeedbackModal({ isOpen, onClose }) {
                         {/* Submit Button */}
                         <button
                             onClick={handleSubmit}
-                            disabled={rating === 0}
+                            disabled={rating === 0 || isSubmitting}
                             style={{
                                 width: '100%',
                                 padding: '14px',
@@ -151,23 +167,30 @@ export default function FeedbackModal({ isOpen, onClose }) {
                                 borderRadius: '12px',
                                 fontSize: '16px',
                                 fontWeight: '600',
-                                cursor: rating > 0 ? 'pointer' : 'not-allowed',
+                                cursor: rating > 0 && !isSubmitting ? 'pointer' : 'not-allowed',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                gap: '8px'
+                                gap: '8px',
+                                opacity: isSubmitting ? 0.8 : 1
                             }}
                         >
-                            <Send size={18} />
-                            Submit Feedback
+                            {isSubmitting ? (
+                                <>
+                                    <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />
+                                    Sending...
+                                </>
+                            ) : (
+                                <>
+                                    <Send size={18} />
+                                    Submit Feedback
+                                </>
+                            )}
                         </button>
                     </>
                 ) : (
                     <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                        <div style={{
-                            fontSize: '48px',
-                            marginBottom: '16px'
-                        }}>🎉</div>
+                        <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎉</div>
                         <h3 style={{
                             fontSize: '20px',
                             fontWeight: '600',
@@ -176,15 +199,18 @@ export default function FeedbackModal({ isOpen, onClose }) {
                         }}>
                             Thank you!
                         </h3>
-                        <p style={{
-                            fontSize: '14px',
-                            color: '#757575'
-                        }}>
-                            Your feedback helps us improve
+                        <p style={{ fontSize: '14px', color: '#757575' }}>
+                            Your feedback has been received
                         </p>
                     </div>
                 )}
             </div>
+
+            <style>{`
+                @keyframes spin {
+                    to { transform: rotate(360deg); }
+                }
+            `}</style>
         </div>
     );
 }

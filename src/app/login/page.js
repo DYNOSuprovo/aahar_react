@@ -3,8 +3,9 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, Eye, EyeOff, User, ArrowRight, Sparkles } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, User, ArrowRight, Sparkles, AlertCircle, Loader2 } from 'lucide-react';
 import { useUser } from '../../context/UserContext';
+import { useAuth } from '../../context/AuthContext';
 
 // Floating food icons component
 const FloatingIcons = () => {
@@ -101,18 +102,74 @@ export default function Login() {
     const [name, setName] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [focusedInput, setFocusedInput] = useState(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
     const router = useRouter();
     const { isOnboarded, updateProfile } = useUser();
+    const { login, signup, loginWithGoogle, loginWithFacebook, authError, clearError } = useAuth();
 
-    const handleAuth = (e) => {
-        if (e) e.preventDefault();
-
-        if (email) {
-            updateProfile('email', email);
-            const nameFromEmail = email.split('@')[0];
-            updateProfile('name', name || nameFromEmail.charAt(0).toUpperCase() + nameFromEmail.slice(1));
+    const handleNavigation = (user) => {
+        if (user) {
+            if (user.email) updateProfile('email', user.email);
+            if (user.displayName) updateProfile('name', user.displayName);
         }
 
+        if (isOnboarded) {
+            router.push('/dashboard');
+        } else {
+            router.push('/onboarding');
+        }
+    };
+
+    const handleAuth = async (e) => {
+        if (e) e.preventDefault();
+        if (isSubmitting) return;
+
+        setIsSubmitting(true);
+        clearError();
+
+        let result;
+        if (isLogin) {
+            result = await login(email, password);
+        } else {
+            const displayName = name || email.split('@')[0].charAt(0).toUpperCase() + email.split('@')[0].slice(1);
+            result = await signup(email, password, displayName);
+        }
+
+        setIsSubmitting(false);
+
+        if (result.success) {
+            handleNavigation(result.user);
+        }
+    };
+
+    const handleGoogleSignIn = async () => {
+        if (isSubmitting) return;
+        setIsSubmitting(true);
+        clearError();
+
+        const result = await loginWithGoogle();
+        setIsSubmitting(false);
+
+        if (result.success) {
+            handleNavigation(result.user);
+        }
+    };
+
+    const handleFacebookSignIn = async () => {
+        if (isSubmitting) return;
+        setIsSubmitting(true);
+        clearError();
+
+        const result = await loginWithFacebook();
+        setIsSubmitting(false);
+
+        if (result.success) {
+            handleNavigation(result.user);
+        }
+    };
+
+    const handleGuestMode = () => {
         if (isOnboarded) {
             router.push('/dashboard');
         } else {
@@ -214,7 +271,7 @@ export default function Login() {
                             transition={{ type: "spring", stiffness: 300, damping: 30 }}
                         />
                         <button
-                            onClick={() => setIsLogin(true)}
+                            onClick={() => { setIsLogin(true); clearError(); }}
                             style={{
                                 flex: 1,
                                 padding: '12px',
@@ -231,7 +288,7 @@ export default function Login() {
                             Login
                         </button>
                         <button
-                            onClick={() => setIsLogin(false)}
+                            onClick={() => { setIsLogin(false); clearError(); }}
                             style={{
                                 flex: 1,
                                 padding: '12px',
@@ -248,6 +305,27 @@ export default function Login() {
                             Sign Up
                         </button>
                     </div>
+
+                    {/* Error Message */}
+                    {authError && (
+                        <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            style={{
+                                padding: '12px 16px',
+                                marginBottom: '16px',
+                                background: '#FEE2E2',
+                                borderRadius: '12px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '10px',
+                                color: '#DC2626'
+                            }}
+                        >
+                            <AlertCircle size={20} />
+                            <span style={{ fontSize: '14px' }}>{authError}</span>
+                        </motion.div>
+                    )}
 
                     <AnimatePresence mode="wait">
                         <motion.form
@@ -274,6 +352,7 @@ export default function Login() {
                                         onFocus={() => setFocusedInput('name')}
                                         onBlur={() => setFocusedInput(null)}
                                         style={inputStyle(focusedInput === 'name')}
+                                        disabled={isSubmitting}
                                     />
                                 </motion.div>
                             )}
@@ -290,6 +369,7 @@ export default function Login() {
                                     onBlur={() => setFocusedInput(null)}
                                     style={inputStyle(focusedInput === 'email')}
                                     required
+                                    disabled={isSubmitting}
                                 />
                             </div>
 
@@ -305,6 +385,8 @@ export default function Login() {
                                     onBlur={() => setFocusedInput(null)}
                                     style={{ ...inputStyle(focusedInput === 'password'), paddingRight: '48px' }}
                                     required
+                                    minLength={6}
+                                    disabled={isSubmitting}
                                 />
                                 <button
                                     type="button"
@@ -340,6 +422,7 @@ export default function Login() {
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
                                 type="submit"
+                                disabled={isSubmitting}
                                 style={{
                                     width: '100%',
                                     padding: '16px',
@@ -349,17 +432,27 @@ export default function Login() {
                                     borderRadius: '16px',
                                     fontSize: '16px',
                                     fontWeight: '700',
-                                    cursor: 'pointer',
+                                    cursor: isSubmitting ? 'not-allowed' : 'pointer',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     gap: '8px',
                                     boxShadow: '0 4px 20px rgba(29, 185, 84, 0.3)',
-                                    marginTop: !isLogin ? '24px' : '0'
+                                    marginTop: !isLogin ? '24px' : '0',
+                                    opacity: isSubmitting ? 0.8 : 1
                                 }}
                             >
-                                {isLogin ? 'Login' : 'Create Account'}
-                                <ArrowRight size={18} />
+                                {isSubmitting ? (
+                                    <>
+                                        <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />
+                                        {isLogin ? 'Logging in...' : 'Creating Account...'}
+                                    </>
+                                ) : (
+                                    <>
+                                        {isLogin ? 'Login' : 'Create Account'}
+                                        <ArrowRight size={18} />
+                                    </>
+                                )}
                             </motion.button>
                         </motion.form>
                     </AnimatePresence>
@@ -381,6 +474,8 @@ export default function Login() {
                         <motion.button
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
+                            onClick={handleGoogleSignIn}
+                            disabled={isSubmitting}
                             style={{
                                 flex: 1,
                                 padding: '14px',
@@ -389,12 +484,13 @@ export default function Login() {
                                 background: '#DB4437',
                                 color: 'white',
                                 fontWeight: '600',
-                                cursor: 'pointer',
+                                cursor: isSubmitting ? 'not-allowed' : 'pointer',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 gap: '8px',
-                                fontSize: '14px'
+                                fontSize: '14px',
+                                opacity: isSubmitting ? 0.7 : 1
                             }}
                         >
                             <Mail size={18} />
@@ -403,6 +499,8 @@ export default function Login() {
                         <motion.button
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
+                            onClick={handleFacebookSignIn}
+                            disabled={isSubmitting}
                             style={{
                                 flex: 1,
                                 padding: '14px',
@@ -411,12 +509,13 @@ export default function Login() {
                                 background: '#4267B2',
                                 color: 'white',
                                 fontWeight: '600',
-                                cursor: 'pointer',
+                                cursor: isSubmitting ? 'not-allowed' : 'pointer',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 gap: '8px',
-                                fontSize: '14px'
+                                fontSize: '14px',
+                                opacity: isSubmitting ? 0.7 : 1
                             }}
                         >
                             <span style={{ fontWeight: '800' }}>f</span>
@@ -426,9 +525,10 @@ export default function Login() {
 
                     {/* Guest Login */}
                     <motion.button
-                        onClick={() => handleAuth(null)}
+                        onClick={handleGuestMode}
                         whileHover={{ scale: 1.02, background: 'rgba(29, 185, 84, 0.1)' }}
                         whileTap={{ scale: 0.98 }}
+                        disabled={isSubmitting}
                         style={{
                             width: '100%',
                             padding: '14px',
@@ -437,11 +537,12 @@ export default function Login() {
                             background: 'transparent',
                             color: '#1DB954',
                             fontWeight: '600',
-                            cursor: 'pointer',
+                            cursor: isSubmitting ? 'not-allowed' : 'pointer',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            gap: '8px'
+                            gap: '8px',
+                            opacity: isSubmitting ? 0.7 : 1
                         }}
                     >
                         <Sparkles size={18} />
@@ -468,6 +569,12 @@ export default function Login() {
                     <Link href="/privacy" style={{ color: '#1DB954' }}>Privacy Policy</Link>
                 </motion.p>
             </div>
+
+            <style>{`
+                @keyframes spin {
+                    to { transform: rotate(360deg); }
+                }
+            `}</style>
         </div>
     );
 }

@@ -16,17 +16,70 @@ import {
     Filler
 } from 'chart.js';
 import { useUser } from '../../context/UserContext';
+import { useAuth } from '../../context/AuthContext';
 import BottomNav from '../../components/BottomNav';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
-// Achievement badges
-const achievements = [
-    { id: 'streak3', name: '3 Day Streak', icon: '🔥', earned: true },
-    { id: 'water', name: 'Hydration Hero', icon: '💧', earned: true },
-    { id: 'healthy', name: 'Health Conscious', icon: '🥗', earned: false },
-    { id: 'tracker', name: 'Meal Master', icon: '🏆', earned: false },
-];
+// Get Gravatar URL from email
+const getGravatarUrl = (email, size = 200) => {
+    if (!email) return null;
+    const crypto = require('crypto');
+    const hash = crypto.createHash('md5').update(email.toLowerCase().trim()).digest('hex');
+    return `https://www.gravatar.com/avatar/${hash}?s=${size}&d=identicon`;
+};
+
+// Dynamic achievements based on user data
+const getAchievements = (dailyStats, water, meals) => {
+    const totalDays = dailyStats ? Object.keys(dailyStats).length : 0;
+    const waterGoalMet = water?.current >= (water?.goal || 2000);
+    const totalMeals = meals ? Object.values(meals).flat().length : 0;
+
+    return [
+        {
+            id: 'firstDay',
+            name: 'First Step',
+            icon: '🌱',
+            earned: totalDays >= 1,
+            description: 'Track your first day'
+        },
+        {
+            id: 'streak3',
+            name: '3 Day Streak',
+            icon: '🔥',
+            earned: totalDays >= 3,
+            description: 'Use the app for 3 days'
+        },
+        {
+            id: 'streak7',
+            name: 'Week Warrior',
+            icon: '⚡',
+            earned: totalDays >= 7,
+            description: 'Use the app for 7 days'
+        },
+        {
+            id: 'water',
+            name: 'Hydration Hero',
+            icon: '💧',
+            earned: waterGoalMet,
+            description: 'Meet your daily water goal'
+        },
+        {
+            id: 'meals5',
+            name: 'Meal Logger',
+            icon: '🥗',
+            earned: totalMeals >= 5,
+            description: 'Log 5 meals'
+        },
+        {
+            id: 'meals20',
+            name: 'Meal Master',
+            icon: '🏆',
+            earned: totalMeals >= 20,
+            description: 'Log 20 meals'
+        },
+    ];
+};
 
 // BMI categories
 const getBMICategory = (bmi) => {
@@ -38,10 +91,17 @@ const getBMICategory = (bmi) => {
 
 export default function Profile() {
     const router = useRouter();
-    const { user, updateProfile, preferences, togglePreference, resetApp, dailyStats } = useUser();
+    const { user, updateProfile, preferences, togglePreference, resetApp, dailyStats, water, meals } = useUser();
+    const { currentUser, logout } = useAuth();
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({ ...user });
     const [activeTab, setActiveTab] = useState('stats');
+
+    // Get profile picture (Google photo > Gravatar > null)
+    const profilePicUrl = currentUser?.photoURL || (user.email ? `https://www.gravatar.com/avatar/${user.email.toLowerCase().trim().split('').reduce((a, c) => (((a << 5) - a) + c.charCodeAt(0)) | 0, 0).toString(16).padStart(8, '0')}?s=200&d=identicon` : null);
+
+    // Get dynamic achievements
+    const achievements = getAchievements(dailyStats, water, meals);
 
     useEffect(() => { setFormData({ ...user }); }, [user]);
 
@@ -158,9 +218,18 @@ export default function Profile() {
                                 width: '90px', height: '90px', borderRadius: '20px',
                                 background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                border: '3px solid white', boxShadow: '0 8px 20px rgba(0,0,0,0.08)'
+                                border: '3px solid white', boxShadow: '0 8px 20px rgba(0,0,0,0.08)',
+                                overflow: 'hidden'
                             }}>
-                                <User size={44} color="#22c55e" />
+                                {profilePicUrl ? (
+                                    <img
+                                        src={profilePicUrl}
+                                        alt="Profile"
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                        onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+                                    />
+                                ) : null}
+                                <User size={44} color="#22c55e" style={{ display: profilePicUrl ? 'none' : 'block' }} />
                             </div>
                             <motion.div whileHover={{ scale: 1.1 }} style={{
                                 position: 'absolute', bottom: '-4px', right: '-4px',
@@ -184,11 +253,13 @@ export default function Profile() {
                                     <p style={{ color: '#64748b', fontSize: '14px' }}>{user.email}</p>
                                     <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
                                         <span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '8px', background: '#F0FDF4', color: '#16a34a', fontWeight: '600' }}>
-                                            🔥 3 Day Streak
+                                            🔥 {dailyStats ? Object.keys(dailyStats).length : 0} Day{dailyStats && Object.keys(dailyStats).length !== 1 ? 's' : ''}
                                         </span>
-                                        <span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '8px', background: '#EFF6FF', color: '#2563EB', fontWeight: '600' }}>
-                                            Pro Member
-                                        </span>
+                                        {currentUser && (
+                                            <span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '8px', background: '#EFF6FF', color: '#2563EB', fontWeight: '600' }}>
+                                                ✓ Verified
+                                            </span>
+                                        )}
                                     </div>
                                 </>
                             )}
@@ -340,14 +411,26 @@ export default function Profile() {
 
                 {/* Logout Button */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} style={{ textAlign: 'center' }}>
+                    {currentUser && (
+                        <motion.button whileTap={{ scale: 0.95 }}
+                            onClick={async () => { if (confirm('Logout?')) { await logout(); window.location.href = '/login'; } }}
+                            style={{
+                                color: 'white', background: 'linear-gradient(135deg, #1DB954, #16a34a)', border: 'none', padding: '14px 28px',
+                                borderRadius: '14px', fontSize: '14px', fontWeight: '600', cursor: 'pointer',
+                                display: 'flex', alignItems: 'center', gap: '8px', margin: '0 auto 12px',
+                                boxShadow: '0 4px 15px rgba(29, 185, 84, 0.3)'
+                            }}>
+                            <LogOut size={18} /> Logout
+                        </motion.button>
+                    )}
                     <motion.button whileTap={{ scale: 0.95 }}
-                        onClick={() => { if (confirm('Reset all data and logout?')) { resetApp(); window.location.href = '/'; } }}
+                        onClick={async () => { if (confirm('Reset all data?')) { resetApp(); if (currentUser) await logout(); window.location.href = '/login'; } }}
                         style={{
                             color: '#EF4444', background: '#FEF2F2', border: 'none', padding: '14px 28px',
                             borderRadius: '14px', fontSize: '14px', fontWeight: '600', cursor: 'pointer',
                             display: 'flex', alignItems: 'center', gap: '8px', margin: '0 auto'
                         }}>
-                        <LogOut size={18} /> Reset & Logout
+                        <LogOut size={18} /> Reset All Data
                     </motion.button>
                 </motion.div>
             </div>

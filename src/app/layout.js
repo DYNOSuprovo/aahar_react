@@ -2,6 +2,7 @@ import './globals.css';
 import BottomNav from '../components/BottomNav';
 import FeedbackButton from '../components/FeedbackButton';
 import { UserProvider } from '../context/UserContext';
+import { AuthProvider } from '../context/AuthContext';
 
 export const metadata = {
     title: 'Aahar - Nutrition with Tradition',
@@ -49,9 +50,11 @@ export default function RootLayout({ children }) {
             </head>
             <body>
                 <div className="container">
-                    <UserProvider>
-                        {children}
-                    </UserProvider>
+                    <AuthProvider>
+                        <UserProvider>
+                            {children}
+                        </UserProvider>
+                    </AuthProvider>
                     <BottomNav />
                     <FeedbackButton />
                 </div>

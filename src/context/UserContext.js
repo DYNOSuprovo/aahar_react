@@ -31,6 +31,7 @@ export function UserProvider({ children }) {
 
     const [water, setWater] = useState({
         current: 0,
+        goal: 2000,
         history: []
     });
 
@@ -41,7 +42,7 @@ export function UserProvider({ children }) {
         lowCarb: false,
     });
 
-    // New: Daily Stats History
+    // Daily Stats History
     const [dailyStats, setDailyStats] = useState({});
     const [lastActiveDate, setLastActiveDate] = useState('');
 
@@ -68,7 +69,7 @@ export function UserProvider({ children }) {
                 const today = new Date().toISOString().split('T')[0];
                 if (savedLastDate && savedLastDate !== today) {
                     // Reset daily trackers for new day
-                    setWater({ current: 0, history: [] });
+                    setWater({ current: 0, goal: 2000, history: [] });
                     setMeals({ breakfast: [], lunch: [], snack: [], dinner: [] });
                 }
                 setLastActiveDate(today);
@@ -117,7 +118,7 @@ export function UserProvider({ children }) {
             if (today !== lastActiveDate) {
                 console.log("New day detected! Resetting...");
                 setLastActiveDate(today);
-                setWater({ current: 0, history: [] });
+                setWater({ current: 0, goal: water.goal || 2000, history: [] });
                 setMeals({ breakfast: [], lunch: [], snack: [], dinner: [] });
             }
         };
@@ -137,7 +138,7 @@ export function UserProvider({ children }) {
             clearInterval(interval);
             document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
-    }, [lastActiveDate, isLoading]);
+    }, [lastActiveDate, isLoading, water.goal]);
 
 
     const addWater = (amount) => {
@@ -145,31 +146,26 @@ export function UserProvider({ children }) {
         const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
         if (today !== lastActiveDate) {
-            // New Day Detected! Reset and start fresh.
             setLastActiveDate(today);
             setMeals({ breakfast: [], lunch: [], snack: [], dinner: [] });
             setWater({
                 current: amount,
+                goal: water.goal || 2000,
                 history: [{ amount, time }]
             });
         } else {
-            // Same Day
             setWater(prev => {
-                // Use a default goal of 2000ml if user.goalWater is 0 to prevent capping at 0
                 const effectiveGoal = user.goalWater > 0 ? user.goalWater : 2000;
                 const maxWater = effectiveGoal * 1.5;
-
-                // Smart Cap: If history sum is already at max, prevent further logs
                 const currentTotal = prev.history.reduce((sum, item) => sum + item.amount, 0);
-                if (currentTotal >= maxWater) {
-                    return prev;
-                }
+                if (currentTotal >= maxWater) return prev;
 
                 const newHistory = [{ amount, time }, ...prev.history];
                 const totalHistory = newHistory.reduce((sum, item) => sum + item.amount, 0);
 
                 return {
                     current: Math.min(totalHistory, maxWater),
+                    goal: prev.goal || 2000,
                     history: newHistory
                 };
             });
@@ -180,13 +176,12 @@ export function UserProvider({ children }) {
         setWater(prev => {
             const newHistory = prev.history.filter((_, i) => i !== index);
             const totalHistory = newHistory.reduce((sum, item) => sum + item.amount, 0);
-
-            // Recalculate max water limit
             const effectiveGoal = user.goalWater > 0 ? user.goalWater : 2000;
             const maxWater = effectiveGoal * 1.5;
 
             return {
                 current: Math.min(totalHistory, maxWater),
+                goal: prev.goal || 2000,
                 history: newHistory
             };
         });
@@ -196,9 +191,8 @@ export function UserProvider({ children }) {
         const today = new Date().toISOString().split('T')[0];
 
         if (today !== lastActiveDate) {
-            // New Day Detected! Reset and start fresh.
             setLastActiveDate(today);
-            setWater({ current: 0, history: [] });
+            setWater({ current: 0, goal: water.goal || 2000, history: [] });
             setMeals({
                 breakfast: [], lunch: [], snack: [], dinner: [],
                 [mealType]: [foodItem]
@@ -223,11 +217,6 @@ export function UserProvider({ children }) {
             const newList = [...prev[mealType]];
             const item = newList[index];
 
-            // If we don't have base values, we might be limited, 
-            // but we can try to derive or just update if we ensured base values are stored.
-            // For robustness, let's assume we will update the structure to store base values.
-            // If base values missing, assume current is for quantity 1 (fallback).
-
             const baseCalories = item.baseCalories || (item.quantity ? item.calories / item.quantity : item.calories);
             const baseProtein = item.baseProtein || (item.quantity ? item.protein / item.quantity : item.protein);
             const baseCarbs = item.baseCarbs || (item.quantity ? item.carbs / item.quantity : item.carbs);
@@ -242,18 +231,12 @@ export function UserProvider({ children }) {
                 fat: (baseFat * newQuantity).toFixed(1)
             };
 
-            return {
-                ...prev,
-                [mealType]: newList
-            };
+            return { ...prev, [mealType]: newList };
         });
     };
 
     const clearMeal = (mealType) => {
-        setMeals(prev => ({
-            ...prev,
-            [mealType]: []
-        }));
+        setMeals(prev => ({ ...prev, [mealType]: [] }));
     };
 
     const updateProfile = (key, value) => {
@@ -275,7 +258,7 @@ export function UserProvider({ children }) {
         setUser(defaultUser);
         setIsOnboarded(false);
         setMeals({ breakfast: [], lunch: [], snack: [], dinner: [] });
-        setWater({ current: 0, history: [] });
+        setWater({ current: 0, goal: 2000, history: [] });
         setDailyStats({});
         setLastActiveDate('');
         localStorage.clear();
@@ -307,5 +290,28 @@ export function UserProvider({ children }) {
 }
 
 export function useUser() {
-    return useContext(UserContext);
+    const context = useContext(UserContext);
+    // Return default values if not in UserProvider (e.g., during SSR)
+    if (!context) {
+        return {
+            user: { name: '', email: '', weight: 0, height: 0, age: 0, gender: 'male', bmi: 0, goalCalories: 0, goalWater: 0 },
+            isOnboarded: false,
+            isLoading: true,
+            meals: { breakfast: [], lunch: [], snack: [], dinner: [] },
+            water: { current: 0, goal: 2000, history: [] },
+            preferences: {},
+            dailyStats: {},
+            addWater: () => { },
+            removeWater: () => { },
+            addFood: () => { },
+            removeFood: () => { },
+            updateFoodQuantity: () => { },
+            clearMeal: () => { },
+            updateProfile: () => { },
+            togglePreference: () => { },
+            completeOnboarding: () => { },
+            resetApp: () => { }
+        };
+    }
+    return context;
 }

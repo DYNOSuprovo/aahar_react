@@ -19,17 +19,17 @@ android {
     
     signingConfigs {
         release {
-            storeFile file('aahar-release-key.keystore')
+            storeFile file('aahar-release-key.jks')
             storePassword 'aahar2024'
-            keyAlias 'aahar-key'
+            keyAlias 'aahar'
             keyPassword 'aahar2024'
         }
     }
     
     buildTypes {
         release {
-            minifyEnabled true
-            shrinkResources true
+            minifyEnabled false
+            shrinkResources false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             signingConfig signingConfigs.release
         }
