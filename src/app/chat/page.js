@@ -15,20 +15,52 @@ const quickSuggestions = [
     { text: "Meal prep tips", icon: "📦" },
 ];
 
+// Storage key for persisting chat
+const CHAT_STORAGE_KEY = 'aahar_chat_messages';
+
 export default function Chat() {
     const { isDark } = useTheme();
     const { t } = useLanguage();
 
-    // Initial message needs to be handled carefully with hydration
+    // Load messages from localStorage on mount
     const [messages, setMessages] = useState([]);
+    const [isInitialized, setIsInitialized] = useState(false);
 
     useEffect(() => {
+        // Load saved messages from localStorage
+        try {
+            const saved = localStorage.getItem(CHAT_STORAGE_KEY);
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (parsed.length > 0) {
+                    setMessages(parsed);
+                    setIsInitialized(true);
+                    return;
+                }
+            }
+        } catch (e) {
+            console.log('Could not load chat history');
+        }
+
+        // If no saved messages, show welcome message
         setMessages([{
             role: 'model',
             content: "Hey there! 👋 I'm **AaharAI**, your personal nutrition assistant. Ask me anything about diet, calories, meal planning, or healthy eating!",
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }]);
+        setIsInitialized(true);
     }, []);
+
+    // Save messages to localStorage whenever they change
+    useEffect(() => {
+        if (isInitialized && messages.length > 0) {
+            try {
+                localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages));
+            } catch (e) {
+                console.log('Could not save chat history');
+            }
+        }
+    }, [messages, isInitialized]);
 
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);

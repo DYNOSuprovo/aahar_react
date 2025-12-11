@@ -189,9 +189,32 @@ export default function Dashboard() {
         return () => clearTimeout(delayDebounceFn);
     }, [searchTerm, filterByPreferences]);
 
-    {/* AI Analysis State */ }
+    {/* AI Analysis State - with localStorage persistence */ }
     const [analysis, setAnalysis] = useState(null);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+    // Load saved analysis on mount
+    useEffect(() => {
+        try {
+            const saved = localStorage.getItem('aahar_analysis');
+            if (saved) {
+                setAnalysis(JSON.parse(saved));
+            }
+        } catch (e) {
+            console.log('Could not load analysis');
+        }
+    }, []);
+
+    // Save analysis when it changes
+    useEffect(() => {
+        if (analysis) {
+            try {
+                localStorage.setItem('aahar_analysis', JSON.stringify(analysis));
+            } catch (e) {
+                console.log('Could not save analysis');
+            }
+        }
+    }, [analysis]);
 
     const handleAnalyze = async () => {
         setIsAnalyzing(true);
