@@ -1,106 +1,61 @@
 "use client";
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, ChevronRight, Scale, Activity, Flame, Droplets, Edit2, Save, X, Camera, Award, TrendingUp, Shield, Info, LogOut, Moon, Sun, Zap, Ruler } from 'lucide-react';
 import { Line } from 'react-chartjs-2';
 import {
-    Chart as ChartJS,
-    CategoryScale,
-    LinearScale,
-    PointElement,
-    LineElement,
-    Title,
-    Tooltip,
-    Legend,
-    Filler
+    Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler
 } from 'chart.js';
 import { useUser } from '../../context/UserContext';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
+import SettingsPanel from '../../components/SettingsPanel';
 import BottomNav from '../../components/BottomNav';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
 // Get Gravatar URL from email
+// Get Gravatar URL from email
 const getGravatarUrl = (email, size = 200) => {
-    if (!email) return null;
-    const crypto = require('crypto');
-    const hash = crypto.createHash('md5').update(email.toLowerCase().trim()).digest('hex');
-    return `https://www.gravatar.com/avatar/${hash}?s=${size}&d=identicon`;
+    // Crypto module is not available in client-side browser/webview
+    // Returning null for now to prevent crash. 
+    // TODO: Use a client-side MD5 library if Gravatar is needed.
+    return null;
 };
 
 // Dynamic achievements based on user data
 const getAchievements = (dailyStats, water, meals) => {
     const totalDays = dailyStats ? Object.keys(dailyStats).length : 0;
-    const waterGoalMet = water?.current >= (water?.goal || 2000);
-    const totalMeals = meals ? Object.values(meals).flat().length : 0;
-
     return [
-        {
-            id: 'firstDay',
-            name: 'First Step',
-            icon: '🌱',
-            earned: totalDays >= 1,
-            description: 'Track your first day'
-        },
-        {
-            id: 'streak3',
-            name: '3 Day Streak',
-            icon: '🔥',
-            earned: totalDays >= 3,
-            description: 'Use the app for 3 days'
-        },
-        {
-            id: 'streak7',
-            name: 'Week Warrior',
-            icon: '⚡',
-            earned: totalDays >= 7,
-            description: 'Use the app for 7 days'
-        },
-        {
-            id: 'water',
-            name: 'Hydration Hero',
-            icon: '💧',
-            earned: waterGoalMet,
-            description: 'Meet your daily water goal'
-        },
-        {
-            id: 'meals5',
-            name: 'Meal Logger',
-            icon: '🥗',
-            earned: totalMeals >= 5,
-            description: 'Log 5 meals'
-        },
-        {
-            id: 'meals20',
-            name: 'Meal Master',
-            icon: '🏆',
-            earned: totalMeals >= 20,
-            description: 'Log 20 meals'
-        },
+        { id: 'firstDay', name: 'First Step', icon: '🌱', earned: totalDays >= 1, description: 'Track your first day' },
+        { id: 'streak3', name: '3 Day Streak', icon: '🔥', earned: totalDays >= 3, description: 'Use the app for 3 days' },
+        { id: 'streak7', name: 'Week Warrior', icon: '⚡', earned: totalDays >= 7, description: 'Use the app for 7 days' },
+        { id: 'hydration', name: 'Hydration Hero', icon: '💧', earned: water && water.current >= (water.goal || 2000), description: 'Reach water goal' },
     ];
 };
 
-// BMI categories
 const getBMICategory = (bmi) => {
-    if (bmi < 18.5) return { label: 'Underweight', color: '#3B82F6', bg: '#EFF6FF' };
-    if (bmi < 25) return { label: 'Normal', color: '#22C55E', bg: '#F0FDF4' };
-    if (bmi < 30) return { label: 'Overweight', color: '#F59E0B', bg: '#FFFBEB' };
-    return { label: 'Obese', color: '#EF4444', bg: '#FEF2F2' };
+    if (bmi < 18.5) return { label: 'Underweight', color: '#3B82F6' };
+    if (bmi < 25) return { label: 'Healthy', color: '#10B981' };
+    if (bmi < 30) return { label: 'Overweight', color: '#F59E0B' };
+    return { label: 'Obese', color: '#EF4444' };
 };
 
 export default function Profile() {
     const router = useRouter();
-    const { user, updateProfile, preferences, togglePreference, resetApp, dailyStats, water, meals } = useUser();
+    const { user, updateProfile, resetApp, dailyStats, water, meals } = useUser();
     const { currentUser, logout } = useAuth();
+    const { t } = useLanguage();
+    const { isDark } = useTheme();
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({ ...user });
-    const [activeTab, setActiveTab] = useState('stats');
+    const [imageError, setImageError] = useState(false);
 
-    // Get profile picture (Google photo > Gravatar > null)
-    const profilePicUrl = currentUser?.photoURL || (user.email ? `https://www.gravatar.com/avatar/${user.email.toLowerCase().trim().split('').reduce((a, c) => (((a << 5) - a) + c.charCodeAt(0)) | 0, 0).toString(16).padStart(8, '0')}?s=200&d=identicon` : null);
-
-    // Get dynamic achievements
+    // Profile Pic
+    const profilePicUrl = currentUser?.photoURL || (user.email ? getGravatarUrl(user.email) : null);
     const achievements = getAchievements(dailyStats, water, meals);
 
     useEffect(() => { setFormData({ ...user }); }, [user]);
@@ -124,19 +79,17 @@ export default function Profile() {
 
     const handleCancel = () => { setFormData({ ...user }); setIsEditing(false); };
 
+    // Chart Data
     const getChartData = () => {
-        if (!dailyStats || Object.keys(dailyStats).length === 0) {
-            return { labels: ['Current'], data: [formData.weight] };
-        }
+        if (!dailyStats || Object.keys(dailyStats).length === 0) return { labels: ['Current'], data: [formData.weight] };
         const dates = Object.keys(dailyStats).sort().slice(-7);
         return {
             labels: dates.map(d => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })),
             data: dates.map(d => dailyStats[d].weight || 0)
         };
     };
-
     const chartData = getChartData();
-    // Safe BMI calculation - handle edge cases
+
     const calculateBMI = (weight, height) => {
         if (!weight || !height || height === 0) return 0;
         const heightInM = height / 100;
@@ -148,42 +101,38 @@ export default function Profile() {
     const data = {
         labels: chartData.labels,
         datasets: [{
-            label: 'Weight (kg)',
+            fill: true,
+            label: t('profile_weight'),
             data: chartData.data,
             borderColor: '#1DB954',
             backgroundColor: 'rgba(29, 185, 84, 0.1)',
-            fill: true,
-            tension: 0.4,
-            pointRadius: 5,
-            pointBackgroundColor: '#1DB954',
-            pointBorderColor: 'white',
-            pointBorderWidth: 2,
-        }],
+            tension: 0.4
+        }]
     };
 
     const options = {
         responsive: true,
-        maintainAspectRatio: false,
         plugins: { legend: { display: false } },
         scales: {
-            y: { display: false },
-            x: { grid: { display: false }, ticks: { color: '#9CA3AF', font: { size: 10 } } }
+            y: { grid: { display: false }, ticks: { color: isDark ? '#9CA3AF' : '#4B5563' } },
+            x: { grid: { display: false }, ticks: { color: isDark ? '#9CA3AF' : '#4B5563' } }
         }
     };
 
-    const settingsItems = [
-        { icon: Shield, label: 'Privacy Policy', path: '/privacy', color: '#6366F1' },
-        { icon: Info, label: 'About Aahar', path: '/about', color: '#0EA5E9' },
-    ];
-
     return (
         <>
-            <div style={{ padding: '20px', paddingBottom: '100px', background: 'linear-gradient(180deg, #f0fdf4 0%, #f8fafc 100%)', minHeight: '100vh' }}>
+            <div style={{
+                padding: '20px',
+                paddingBottom: '100px',
+                background: 'var(--bg-gradient-main)',
+                minHeight: '100vh',
+                color: 'var(--text-primary)'
+            }}>
 
                 {/* Header */}
                 <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
                     style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                    <h1 style={{ fontSize: '26px', fontWeight: '800', color: '#0f172a' }}>Profile</h1>
+                    <h1 style={{ fontSize: '26px', fontWeight: '800', color: 'var(--text-primary)' }}>{t('profile_title')}</h1>
                     <div style={{ display: 'flex', gap: '10px' }}>
                         {isEditing ? (
                             <>
@@ -198,218 +147,162 @@ export default function Profile() {
                             </>
                         ) : (
                             <motion.button whileTap={{ scale: 0.9 }} onClick={() => setIsEditing(true)}
-                                style={{ padding: '10px', borderRadius: '12px', background: 'white', color: '#1e293b', border: '1px solid #e2e8f0', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+                                style={{
+                                    padding: '10px', borderRadius: '12px', background: 'var(--bg-card)', color: 'var(--text-primary)',
+                                    border: '1px solid var(--border-color)', cursor: 'pointer', boxShadow: 'var(--shadow-sm)',
+                                    backdropFilter: 'blur(12px)'
+                                }}>
                                 <Edit2 size={20} />
                             </motion.button>
                         )}
                     </div>
                 </motion.div>
 
-                {/* Profile Card with Gradient Border */}
+                {/* Profile Card */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
                     style={{
-                        background: 'linear-gradient(135deg, #1DB954, #16a34a, #0EA5E9)',
+                        background: 'var(--bg-gradient-header)',
                         borderRadius: '24px', padding: '3px', marginBottom: '20px',
                         boxShadow: '0 10px 40px rgba(29, 185, 84, 0.2)'
                     }}>
-                    <div style={{ background: 'white', borderRadius: '22px', padding: '24px', display: 'flex', alignItems: 'center', gap: '20px' }}>
+                    <div style={{
+                        background: 'var(--bg-card)',
+                        backdropFilter: 'blur(20px) saturate(200%)',
+                        borderRadius: '22px',
+                        padding: '24px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '20px'
+                    }}>
                         <div style={{ position: 'relative' }}>
                             <div style={{
                                 width: '90px', height: '90px', borderRadius: '20px',
                                 background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                border: '3px solid white', boxShadow: '0 8px 20px rgba(0,0,0,0.08)',
-                                overflow: 'hidden'
+                                overflow: 'hidden', border: '2px solid #fff', boxShadow: '0 8px 20px rgba(0,0,0,0.1)'
                             }}>
-                                {profilePicUrl ? (
+                                {profilePicUrl && !imageError ? (
                                     <img
                                         src={profilePicUrl}
                                         alt="Profile"
+                                        onError={() => setImageError(true)}
                                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                        onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
                                     />
-                                ) : null}
-                                <User size={44} color="#22c55e" style={{ display: profilePicUrl ? 'none' : 'block' }} />
+                                ) : (
+                                    <User size={40} color="#15803d" />
+                                )}
                             </div>
-                            <motion.div whileHover={{ scale: 1.1 }} style={{
-                                position: 'absolute', bottom: '-4px', right: '-4px',
-                                background: 'linear-gradient(135deg, #1DB954, #16a34a)',
-                                borderRadius: '10px', padding: '8px', border: '3px solid white', cursor: 'pointer'
-                            }}>
-                                <Camera size={14} color="white" />
-                            </motion.div>
                         </div>
-                        <div style={{ flex: 1 }}>
+                        <div>
                             {isEditing ? (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                    <input type="text" name="name" value={formData.name} onChange={handleInputChange}
-                                        style={{ fontSize: '18px', fontWeight: '700', border: '2px solid #e2e8f0', borderRadius: '10px', padding: '8px 12px', width: '100%', outline: 'none' }} />
-                                    <input type="email" name="email" value={formData.email} onChange={handleInputChange}
-                                        style={{ fontSize: '14px', color: '#64748b', border: '2px solid #e2e8f0', borderRadius: '10px', padding: '8px 12px', width: '100%', outline: 'none' }} />
-                                </div>
+                                <input name="name" value={formData.name} onChange={handleInputChange}
+                                    style={{ fontSize: '20px', fontWeight: 'bold', width: '100%', marginBottom: '4px', padding: '4px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--input-bg)', color: 'var(--text-primary)' }} />
                             ) : (
-                                <>
-                                    <h2 style={{ fontSize: '22px', fontWeight: '800', color: '#0f172a', marginBottom: '4px' }}>{user.name}</h2>
-                                    <p style={{ color: '#64748b', fontSize: '14px' }}>{user.email}</p>
-                                    <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
-                                        <span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '8px', background: '#F0FDF4', color: '#16a34a', fontWeight: '600' }}>
-                                            🔥 {dailyStats ? Object.keys(dailyStats).length : 0} Day{dailyStats && Object.keys(dailyStats).length !== 1 ? 's' : ''}
-                                        </span>
-                                        {currentUser && (
-                                            <span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '8px', background: '#EFF6FF', color: '#2563EB', fontWeight: '600' }}>
-                                                ✓ Verified
-                                            </span>
-                                        )}
-                                    </div>
-                                </>
+                                <h2 style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '4px' }}>{user.name || t('onboarding_name')}</h2>
                             )}
+                            <p style={{ fontSize: '14px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <Award size={14} color="#EAB308" /> {t('profile_days_tracked')}: {Object.keys(dailyStats || {}).length}
+                            </p>
                         </div>
-                    </div>
-                </motion.div>
-
-                {/* Achievement Badges */}
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
-                    style={{ background: 'white', borderRadius: '20px', padding: '18px', marginBottom: '20px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
-                    <h3 style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Award size={16} color="#F59E0B" /> Achievements
-                    </h3>
-                    <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '4px' }}>
-                        {achievements.map(badge => (
-                            <motion.div key={badge.id} animate={{ opacity: badge.earned ? 1 : 0.4, scale: badge.earned ? 1 : 0.95 }}
-                                style={{
-                                    minWidth: '75px', padding: '12px 10px', borderRadius: '14px', textAlign: 'center',
-                                    background: badge.earned ? '#FEF3C7' : '#f1f5f9', border: badge.earned ? '2px solid #F59E0B' : '2px solid #e2e8f0'
-                                }}>
-                                <span style={{ fontSize: '26px' }}>{badge.icon}</span>
-                                <div style={{ fontSize: '9px', fontWeight: '600', color: badge.earned ? '#92400E' : '#94a3b8', marginTop: '4px' }}>{badge.name}</div>
-                            </motion.div>
-                        ))}
                     </div>
                 </motion.div>
 
                 {/* Stats Grid */}
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-                    style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
-                    {/* Weight */}
-                    <div style={{ background: 'white', borderRadius: '18px', padding: '18px', textAlign: 'center', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
-                        <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#F0FDF4', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px' }}>
-                            <Scale size={22} color="#22C55E" />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
+                    <div style={{ background: 'var(--bg-card)', backdropFilter: 'blur(20px) saturate(200%)', padding: '16px', borderRadius: '20px', border: '1px solid var(--border-color)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                            <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{t('profile_weight')}</span>
+                            <Scale size={16} color="#1DB954" />
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                            {isEditing ? (
+                                <input name="weight" type="number" value={formData.weight} onChange={handleInputChange}
+                                    style={{ fontSize: '18px', fontWeight: 'bold', width: '60px', padding: '2px', background: 'var(--input-bg)', color: 'var(--text-primary)' }} />
+                            ) : (
+                                <span style={{ fontSize: '22px', fontWeight: '800', color: 'var(--text-primary)' }}>{user.weight}</span>
+                            )}
+                            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>kg</span>
+                        </div>
+                    </div>
+
+                    <div style={{ background: 'var(--bg-card)', backdropFilter: 'blur(20px) saturate(200%)', padding: '16px', borderRadius: '20px', border: '1px solid var(--border-color)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                            <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{t('profile_height')}</span>
+                            <Ruler size={16} color="#3B82F6" />
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                            {isEditing ? (
+                                <input name="height" type="number" value={formData.height} onChange={handleInputChange}
+                                    style={{ fontSize: '18px', fontWeight: 'bold', width: '60px', padding: '2px', background: 'var(--input-bg)', color: 'var(--text-primary)' }} />
+                            ) : (
+                                <span style={{ fontSize: '22px', fontWeight: '800', color: 'var(--text-primary)' }}>{user.height}</span>
+                            )}
+                            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>cm</span>
+                        </div>
+                    </div>
+
+                    <div style={{ background: 'var(--bg-card)', backdropFilter: 'blur(20px) saturate(200%)', padding: '16px', borderRadius: '20px', border: '1px solid var(--border-color)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                            <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{t('profile_bmi')}</span>
+                            <Activity size={16} color={bmiInfo.color} />
+                        </div>
+                        <div>
+                            <span style={{ fontSize: '22px', fontWeight: '800', color: 'var(--text-primary)' }}>{bmi.toFixed(1)}</span>
+                            <span style={{ fontSize: '12px', color: bmiInfo.color, marginLeft: '6px', fontWeight: '600' }}>{bmiInfo.label}</span>
+                        </div>
+                    </div>
+
+                    <div style={{ background: 'var(--bg-card)', backdropFilter: 'blur(20px) saturate(200%)', padding: '16px', borderRadius: '20px', border: '1px solid var(--border-color)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                            <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{t('profile_age')}</span>
+                            <User size={16} color="#F59E0B" />
                         </div>
                         {isEditing ? (
-                            <input type="number" name="weight" value={formData.weight} onChange={handleInputChange}
-                                style={{ width: '70px', textAlign: 'center', border: '2px solid #e2e8f0', borderRadius: '10px', padding: '6px', fontSize: '20px', fontWeight: '700' }} />
+                            <input name="age" type="number" value={formData.age} onChange={handleInputChange}
+                                style={{ fontSize: '22px', fontWeight: '800', width: '100%', padding: '2px', background: 'var(--input-bg)', color: 'var(--text-primary)' }} />
                         ) : (
-                            <div style={{ fontSize: '26px', fontWeight: '800', color: '#0f172a' }}>{user.weight}<span style={{ fontSize: '14px', fontWeight: '500', color: '#94a3b8' }}> kg</span></div>
+                            <span style={{ fontSize: '22px', fontWeight: '800', color: 'var(--text-primary)' }}>{user.age}</span>
                         )}
-                        <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>Current Weight</div>
                     </div>
+                </div>
 
-                    {/* Height */}
-                    <div style={{ background: 'white', borderRadius: '18px', padding: '18px', textAlign: 'center', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
-                        <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#F5F3FF', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px' }}>
-                            <Ruler size={22} color="#8B5CF6" />
+                {/* Achievements */}
+                <h3 style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Flame size={20} color="#F59E0B" /> {t('profile_achievements')}
+                </h3>
+                <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '16px', scrollbarWidth: 'none' }}>
+                    {achievements.map(ach => (
+                        <div key={ach.id} style={{
+                            minWidth: '100px', padding: '12px', borderRadius: '16px',
+                            background: ach.earned ? 'linear-gradient(135deg, #1DB954 0%, #10B981 100%)' : 'var(--bg-card)',
+                            backdropFilter: ach.earned ? 'none' : 'blur(12px)',
+                            border: ach.earned ? 'none' : '1px dashed var(--border-color)',
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                            opacity: ach.earned ? 1 : 0.6
+                        }}>
+                            <span style={{ fontSize: '24px' }}>{ach.icon}</span>
+                            <span style={{ fontSize: '11px', fontWeight: '600', color: ach.earned ? 'white' : 'var(--text-secondary)', textAlign: 'center' }}>{ach.name}</span>
                         </div>
-                        {isEditing ? (
-                            <input type="number" name="height" value={formData.height} onChange={handleInputChange}
-                                style={{ width: '70px', textAlign: 'center', border: '2px solid #e2e8f0', borderRadius: '10px', padding: '6px', fontSize: '20px', fontWeight: '700' }} />
-                        ) : (
-                            <div style={{ fontSize: '26px', fontWeight: '800', color: '#0f172a' }}>{user.height || '-'}<span style={{ fontSize: '14px', fontWeight: '500', color: '#94a3b8' }}> cm</span></div>
-                        )}
-                        <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>Height</div>
+                    ))}
+                </div>
+
+                {/* Weight Chart */}
+                <div style={{ background: 'var(--bg-card)', backdropFilter: 'blur(20px) saturate(200%)', padding: '20px', borderRadius: '24px', marginBottom: '24px', border: '1px solid var(--border-color)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                        <h3 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)' }}>{t('profile_stats')}</h3>
+                        <TrendingUp size={18} color="#1DB954" />
                     </div>
-
-                    {/* BMI with Gauge */}
-                    <div style={{ background: 'white', borderRadius: '18px', padding: '18px', textAlign: 'center', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
-                        <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: bmiInfo.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px' }}>
-                            <Scale size={22} color={bmiInfo.color} />
-                        </div>
-                        <div style={{ fontSize: '26px', fontWeight: '800', color: '#0f172a' }}>{bmi > 0 ? bmi.toFixed(1) : '-'}</div>
-                        <div style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '6px', background: bmiInfo.bg, color: bmiInfo.color, fontWeight: '600', display: 'inline-block', marginTop: '4px' }}>
-                            {bmi > 0 ? bmiInfo.label : 'N/A'}
-                        </div>
-                    </div>
-
-                    {/* Calorie Goal */}
-                    <div style={{ background: 'white', borderRadius: '18px', padding: '18px', textAlign: 'center', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
-                        <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#FFF7ED', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px' }}>
-                            <Flame size={22} color="#F97316" />
-                        </div>
-                        {isEditing ? (
-                            <input type="number" name="goalCalories" value={formData.goalCalories} onChange={handleInputChange}
-                                style={{ width: '80px', textAlign: 'center', border: '2px solid #e2e8f0', borderRadius: '10px', padding: '6px', fontSize: '20px', fontWeight: '700' }} />
-                        ) : (
-                            <div style={{ fontSize: '26px', fontWeight: '800', color: '#0f172a' }}>{user.goalCalories}<span style={{ fontSize: '12px', fontWeight: '500', color: '#94a3b8' }}> kcal</span></div>
-                        )}
-                        <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>Daily Goal</div>
-                    </div>
-
-                    {/* Water Goal */}
-                    <div style={{ background: 'white', borderRadius: '18px', padding: '18px', textAlign: 'center', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
-                        <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px' }}>
-                            <Droplets size={22} color="#3B82F6" />
-                        </div>
-                        {isEditing ? (
-                            <input type="number" name="goalWater" value={formData.goalWater} onChange={handleInputChange}
-                                style={{ width: '80px', textAlign: 'center', border: '2px solid #e2e8f0', borderRadius: '10px', padding: '6px', fontSize: '20px', fontWeight: '700' }} />
-                        ) : (
-                            <div style={{ fontSize: '26px', fontWeight: '800', color: '#0f172a' }}>{(user.goalWater / 1000).toFixed(1)}<span style={{ fontSize: '14px', fontWeight: '500', color: '#94a3b8' }}> L</span></div>
-                        )}
-                        <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>Water Goal</div>
-                    </div>
-                </motion.div>
-
-                {/* Weight Trend Chart */}
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
-                    style={{ background: 'white', borderRadius: '20px', padding: '20px', marginBottom: '20px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
-                    <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#0f172a', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <TrendingUp size={16} color="#22C55E" /> Weight Trend
-                    </h3>
-                    <p style={{ color: '#64748b', fontSize: '12px', marginBottom: '16px' }}>Your recent progress</p>
-                    <div style={{ height: '160px' }}>
+                    <div style={{ height: '150px' }}>
                         <Line data={data} options={options} />
                     </div>
+                </div>
+
+                {/* Settings Panel */}
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }} style={{ marginBottom: '20px' }}>
+                    <SettingsPanel />
                 </motion.div>
 
-                {/* Dietary Preferences */}
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-                    style={{ background: 'white', borderRadius: '20px', padding: '20px', marginBottom: '20px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
-                    <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#0f172a', marginBottom: '16px' }}>🥗 Dietary Preferences</h3>
-                    {Object.entries(preferences).map(([key, value]) => (
-                        <div key={key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 0', borderBottom: '1px solid #f1f5f9' }}>
-                            <span style={{ textTransform: 'capitalize', fontWeight: '500', color: '#334155' }}>{key.replace(/([A-Z])/g, ' $1').trim()}</span>
-                            <motion.div whileTap={{ scale: 0.95 }} onClick={() => togglePreference(key)}
-                                style={{
-                                    width: '50px', height: '28px', borderRadius: '14px', position: 'relative', cursor: 'pointer',
-                                    background: value ? 'linear-gradient(135deg, #1DB954, #16a34a)' : '#e2e8f0', transition: 'background 0.3s'
-                                }}>
-                                <motion.div animate={{ left: value ? '24px' : '4px' }}
-                                    style={{ width: '22px', height: '22px', background: 'white', borderRadius: '50%', position: 'absolute', top: '3px', boxShadow: '0 2px 4px rgba(0,0,0,0.15)' }} />
-                            </motion.div>
-                        </div>
-                    ))}
-                </motion.div>
-
-                {/* Settings */}
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
-                    style={{ background: 'white', borderRadius: '20px', padding: '8px 16px', marginBottom: '20px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
-                    {settingsItems.map((item, idx) => (
-                        <motion.div key={item.label} whileTap={{ scale: 0.98 }} onClick={() => router.push(item.path)}
-                            style={{
-                                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                                padding: '16px 4px', borderBottom: idx < settingsItems.length - 1 ? '1px solid #f1f5f9' : 'none', cursor: 'pointer'
-                            }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: `${item.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <item.icon size={18} color={item.color} />
-                                </div>
-                                <span style={{ fontSize: '15px', color: '#1e293b', fontWeight: '500' }}>{item.label}</span>
-                            </div>
-                            <ChevronRight size={18} color="#94a3b8" />
-                        </motion.div>
-                    ))}
-                </motion.div>
-
-                {/* Logout Button */}
+                {/* Buttons */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} style={{ textAlign: 'center' }}>
                     {currentUser && (
                         <motion.button whileTap={{ scale: 0.95 }}
@@ -420,18 +313,22 @@ export default function Profile() {
                                 display: 'flex', alignItems: 'center', gap: '8px', margin: '0 auto 12px',
                                 boxShadow: '0 4px 15px rgba(29, 185, 84, 0.3)'
                             }}>
-                            <LogOut size={18} /> Logout
+                            <LogOut size={18} /> {t('profile_logout')}
                         </motion.button>
                     )}
                     <motion.button whileTap={{ scale: 0.95 }}
                         onClick={async () => { if (confirm('Reset all data?')) { resetApp(); if (currentUser) await logout(); window.location.href = '/login'; } }}
                         style={{
-                            color: '#EF4444', background: '#FEF2F2', border: 'none', padding: '14px 28px',
+                            color: '#EF4444', background: isDark ? 'rgba(239, 68, 68, 0.1)' : '#FEF2F2', border: 'none', padding: '14px 28px',
                             borderRadius: '14px', fontSize: '14px', fontWeight: '600', cursor: 'pointer',
                             display: 'flex', alignItems: 'center', gap: '8px', margin: '0 auto'
                         }}>
                         <LogOut size={18} /> Reset All Data
                     </motion.button>
+                    <div style={{ marginTop: '24px', display: 'flex', gap: '20px', justifyContent: 'center', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                        <Link href="/about" style={{ textDecoration: 'none', color: 'inherit' }}>About Us</Link>
+                        <Link href="/privacy" style={{ textDecoration: 'none', color: 'inherit' }}>Privacy Policy</Link>
+                    </div>
                 </motion.div>
             </div>
             <BottomNav />

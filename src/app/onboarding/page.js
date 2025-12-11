@@ -200,7 +200,7 @@ export default function Onboarding() {
                                         style={{
                                             width: '100%', padding: '18px 18px 18px 50px', borderRadius: '16px',
                                             border: '2px solid #e2e8f0', fontSize: '16px', outline: 'none',
-                                            background: 'white', transition: 'border-color 0.2s'
+                                            background: 'white', color: '#0f172a', transition: 'border-color 0.2s'
                                         }}
                                         onFocus={(e) => e.target.style.borderColor = '#1DB954'}
                                         onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
@@ -218,7 +218,7 @@ export default function Onboarding() {
                                             type="number" name="age" value={formData.age} onChange={handleInputChange} placeholder="25"
                                             style={{
                                                 width: '100%', padding: '16px', borderRadius: '14px',
-                                                border: '2px solid #e2e8f0', fontSize: '16px', outline: 'none', background: 'white'
+                                                border: '2px solid #e2e8f0', fontSize: '16px', outline: 'none', background: 'white', color: '#0f172a'
                                             }}
                                         />
                                     </div>
@@ -228,7 +228,7 @@ export default function Onboarding() {
                                             name="gender" value={formData.gender} onChange={handleInputChange}
                                             style={{
                                                 width: '100%', padding: '16px', borderRadius: '14px',
-                                                border: '2px solid #e2e8f0', fontSize: '16px', outline: 'none', background: 'white'
+                                                border: '2px solid #e2e8f0', fontSize: '16px', outline: 'none', background: 'white', color: '#0f172a'
                                             }}
                                         >
                                             <option value="male">Male</option>
@@ -246,7 +246,7 @@ export default function Onboarding() {
                                             type="number" name="height" value={formData.height} onChange={handleInputChange} placeholder="170"
                                             style={{
                                                 width: '100%', padding: '18px 18px 18px 50px', borderRadius: '14px',
-                                                border: '2px solid #e2e8f0', fontSize: '16px', outline: 'none', background: 'white'
+                                                border: '2px solid #e2e8f0', fontSize: '16px', outline: 'none', background: 'white', color: '#0f172a'
                                             }}
                                         />
                                     </div>
@@ -260,7 +260,7 @@ export default function Onboarding() {
                                             type="number" name="weight" value={formData.weight} onChange={handleInputChange} placeholder="65"
                                             style={{
                                                 width: '100%', padding: '18px 18px 18px 50px', borderRadius: '14px',
-                                                border: '2px solid #e2e8f0', fontSize: '16px', outline: 'none', background: 'white'
+                                                border: '2px solid #e2e8f0', fontSize: '16px', outline: 'none', background: 'white', color: '#0f172a'
                                             }}
                                         />
                                     </div>
@@ -355,7 +355,8 @@ export default function Onboarding() {
                                                 style={{
                                                     width: '100%', padding: '12px', borderRadius: '12px',
                                                     border: '2px solid #e2e8f0', fontSize: '16px', outline: 'none',
-                                                    textAlign: 'center', fontWeight: '700'
+                                                    textAlign: 'center', fontWeight: '700',
+                                                    background: '#f1f5f9', color: '#0f172a'
                                                 }}
                                             />
                                         </div>
@@ -370,7 +371,8 @@ export default function Onboarding() {
                                                 style={{
                                                     width: '100%', padding: '12px', borderRadius: '12px',
                                                     border: '2px solid #e2e8f0', fontSize: '16px', outline: 'none',
-                                                    textAlign: 'center', fontWeight: '700'
+                                                    textAlign: 'center', fontWeight: '700',
+                                                    background: '#f1f5f9', color: '#0f172a'
                                                 }}
                                             />
                                         </div>

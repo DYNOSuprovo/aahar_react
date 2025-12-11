@@ -2,18 +2,23 @@
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, Heart, Zap, Award, Globe } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function About() {
     const router = useRouter();
+    const { isDark } = useTheme();
 
     return (
-        <div style={{ minHeight: '100vh', background: '#f8fafc', padding: '20px' }}>
+        <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', padding: '20px' }}>
             <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
                 style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '30px' }}>
-                <button onClick={() => router.back()} style={{ background: 'white', padding: '10px', borderRadius: '12px', border: 'none', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', cursor: 'pointer' }}>
-                    <ChevronLeft size={24} color="#334155" />
+                <button onClick={() => router.back()} style={{
+                    background: 'var(--bg-card)', padding: '10px', borderRadius: '12px', border: 'none',
+                    boxShadow: 'var(--shadow-sm)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}>
+                    <ChevronLeft size={24} color="var(--text-primary)" />
                 </button>
-                <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a' }}>About Aahar</h1>
+                <h1 style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-primary)' }}>About Aahar</h1>
             </motion.div>
 
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
@@ -21,9 +26,9 @@ export default function About() {
                 <div style={{ width: '80px', height: '80px', background: 'white', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>
                     <span style={{ fontSize: '40px' }}>🥗</span>
                 </div>
-                <h2 style={{ fontSize: '28px', fontWeight: '800', marginBottom: '8px' }}>Aahar Beta</h2>
-                <div style={{ fontSize: '14px', opacity: 0.9, fontWeight: '500' }}>Version 2.0.0-beta</div>
-                <p style={{ marginTop: '16px', lineHeight: '1.6', opacity: 0.95 }}>
+                <h2 style={{ fontSize: '28px', fontWeight: '800', marginBottom: '8px', color: 'white' }}>Aahar Beta</h2>
+                <div style={{ fontSize: '14px', opacity: 0.9, fontWeight: '500', color: 'white' }}>Version 2.0.0-beta</div>
+                <p style={{ marginTop: '16px', lineHeight: '1.6', opacity: 0.95, color: 'white' }}>
                     Combining traditional nutrition wisdom with modern technology to help you lead a healthier life.
                 </p>
             </motion.div>
@@ -40,16 +45,19 @@ export default function About() {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 + (i * 0.1) }}
-                        style={{ background: 'white', padding: '20px', borderRadius: '20px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}
+                        style={{
+                            background: 'var(--bg-card)', padding: '20px', borderRadius: '20px',
+                            boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-color)'
+                        }}
                     >
                         <item.icon size={24} color={item.color} style={{ marginBottom: '12px' }} />
-                        <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#0f172a', marginBottom: '4px' }}>{item.title}</h3>
-                        <p style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.4' }}>{item.desc}</p>
+                        <h3 style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '4px' }}>{item.title}</h3>
+                        <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.4' }}>{item.desc}</p>
                     </motion.div>
                 ))}
             </div>
 
-            <div style={{ textAlign: 'center', marginTop: '40px', color: '#94a3b8', fontSize: '13px' }}>
+            <div style={{ textAlign: 'center', marginTop: '40px', color: 'var(--text-muted)', fontSize: '13px' }}>
                 <p>© 2025 Aahar Inc. All rights reserved.</p>
                 <p style={{ marginTop: '4px' }}>Made with ❤️ by Aahar Team</p>
             </div>

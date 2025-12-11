@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, Star, Plus, Minus, Check, Clock, Utensils, ChevronRight, Coffee, Flame, Zap, Heart } from 'lucide-react';
 import { useUser } from '../../context/UserContext';
+import { useLanguage } from '../../context/LanguageContext';
+import { useTheme } from '../../context/ThemeContext';
 import BottomNav from '../../components/BottomNav';
 import confetti from 'canvas-confetti';
 
@@ -28,20 +30,21 @@ const getEmoji = (name) => {
 
 // Calorie color coding
 const getCalorieColor = (cal) => {
-    if (cal < 150) return { bg: '#E8F5E9', text: '#2E7D32' }; // Low - Green
-    if (cal < 300) return { bg: '#FFF3E0', text: '#E65100' }; // Medium - Orange
-    return { bg: '#FFEBEE', text: '#C62828' }; // High - Red
+    if (cal < 150) return { bg: '#E8F5E9', text: '#2E7D32' };
+    if (cal < 300) return { bg: '#FFF3E0', text: '#E65100' };
+    return { bg: '#FFEBEE', text: '#C62828' };
 };
 
 export default function Mess() {
     const { addFood } = useUser();
+    const { t } = useLanguage();
+    const { isDark } = useTheme();
     const [selectedMeal, setSelectedMeal] = useState('lunch');
     const [selectedDay, setSelectedDay] = useState(new Date().getDay() === 0 ? 6 : new Date().getDay() - 1);
     const [quantities, setQuantities] = useState({});
     const [bookedMeals, setBookedMeals] = useState({});
     const [isLoaded, setIsLoaded] = useState(false);
     const [currentDate, setCurrentDate] = useState(new Date());
-    const [showSummary, setShowSummary] = useState(false);
 
     useEffect(() => {
         const savedBooked = localStorage.getItem('aahar_mess_booked');
@@ -288,6 +291,7 @@ export default function Mess() {
         const key = `${selectedMeal}-${item.name}`;
         const qty = quantities[key] || 0;
         const isToday = selectedDay === todayIndex;
+        const isBooked = bookedMeals[selectedMeal] && isToday;
         const calColor = getCalorieColor(item.calories);
 
         return (
@@ -297,15 +301,16 @@ export default function Mess() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
                 style={{
-                    background: 'white',
+                    background: 'var(--bg-card)',
+                    backdropFilter: 'blur(20px) saturate(200%)',
                     borderRadius: '16px',
                     padding: '16px',
                     marginBottom: '12px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    border: qty > 0 ? '2px solid #1DB954' : '1px solid #E5E5E5',
-                    boxShadow: qty > 0 ? '0 4px 12px rgba(29, 185, 84, 0.15)' : '0 2px 8px rgba(0,0,0,0.04)',
+                    border: qty > 0 ? '2px solid #1DB954' : '1px solid var(--border-color)',
+                    boxShadow: qty > 0 ? '0 4px 12px rgba(29, 185, 84, 0.15)' : 'var(--shadow-sm)',
                     transition: 'all 0.3s ease'
                 }}
             >
@@ -319,30 +324,30 @@ export default function Mess() {
                         {getEmoji(item.name)}
                     </div>
                     <div>
-                        <div style={{ fontWeight: '600', color: '#1a1a1a', fontSize: '15px', marginBottom: '4px' }}>
+                        <div style={{ fontWeight: '600', color: 'var(--text-primary)', fontSize: '15px', marginBottom: '4px' }}>
                             {item.name}
-                            {item.unlimited && <span style={{ fontSize: '10px', color: '#1DB954', marginLeft: '6px', background: '#E8F5E9', padding: '2px 6px', borderRadius: '4px' }}>∞</span>}
+                            {item.unlimited && <span style={{ fontSize: '10px', color: '#1DB954', marginLeft: '6px', background: 'rgba(29, 185, 84, 0.1)', padding: '2px 6px', borderRadius: '4px' }}>∞</span>}
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <span style={{ fontSize: '12px', padding: '3px 8px', borderRadius: '6px', background: calColor.bg, color: calColor.text, fontWeight: '600' }}>
                                 {item.calories} Cal
                             </span>
-                            <span style={{ fontSize: '11px', color: '#9ca3af' }}>per {item.unit}</span>
+                            <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>per {item.unit}</span>
                         </div>
                     </div>
                 </div>
 
-                {isToday && (
-                    <motion.div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#f5f5f5', borderRadius: '12px', padding: '6px' }}>
+                {isToday && !isBooked && (
+                    <motion.div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--bg-secondary)', borderRadius: '12px', padding: '6px' }}>
                         <motion.button
                             whileTap={{ scale: 0.9 }}
                             onClick={() => updateQuantity(item.name, -1)}
                             disabled={qty === 0}
                             style={{
                                 width: '32px', height: '32px', borderRadius: '8px', border: 'none',
-                                background: qty > 0 ? 'white' : '#e5e5e5', color: qty > 0 ? '#333' : '#999',
+                                background: qty > 0 ? 'var(--bg-primary)' : 'transparent', color: qty > 0 ? 'var(--text-primary)' : 'var(--text-muted)',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                cursor: qty === 0 ? 'default' : 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                                cursor: qty === 0 ? 'default' : 'pointer', boxShadow: qty > 0 ? 'var(--shadow-sm)' : 'none'
                             }}
                         >
                             <Minus size={16} />
@@ -351,7 +356,7 @@ export default function Mess() {
                             key={qty}
                             initial={{ scale: 1.3 }}
                             animate={{ scale: 1 }}
-                            style={{ fontWeight: '700', minWidth: '24px', textAlign: 'center', fontSize: '16px' }}
+                            style={{ fontWeight: '700', minWidth: '24px', textAlign: 'center', fontSize: '16px', color: 'var(--text-primary)' }}
                         >
                             {qty}
                         </motion.span>
@@ -391,16 +396,17 @@ export default function Mess() {
                 whileTap={{ scale: isToday && !isBooked ? 0.99 : 1 }}
                 onClick={() => isToday && !isBooked && toggleMainItem(item.name)}
                 style={{
-                    background: isSelected ? 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)' : 'white',
+                    background: isSelected ? 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)' : 'var(--bg-card)',
+                    backdropFilter: 'blur(20px) saturate(200%)',
                     borderRadius: '16px',
                     padding: '16px',
                     marginBottom: '12px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    border: isSelected ? '2px solid #1DB954' : '1px solid #E5E5E5',
+                    border: isSelected ? '2px solid #1DB954' : '1px solid var(--border-color)',
                     cursor: isToday && !isBooked ? 'pointer' : 'default',
-                    boxShadow: isSelected ? '0 4px 12px rgba(29, 185, 84, 0.15)' : '0 2px 8px rgba(0,0,0,0.04)',
+                    boxShadow: isSelected ? '0 4px 12px rgba(29, 185, 84, 0.15)' : 'var(--shadow-sm)',
                     position: 'relative',
                     overflow: 'hidden'
                 }}
@@ -423,7 +429,7 @@ export default function Mess() {
                             animate={{ scale: isSelected ? 1 : 1, borderWidth: isSelected ? '6px' : '2px' }}
                             style={{
                                 width: '24px', height: '24px', borderRadius: '50%',
-                                border: `solid ${isSelected ? '#1DB954' : '#d1d5db'}`,
+                                border: `solid ${isSelected ? '#1DB954' : 'var(--border-color)'}`,
                                 background: isSelected ? '#1DB954' : 'transparent',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 flexShrink: 0
@@ -441,7 +447,7 @@ export default function Mess() {
                         {getEmoji(item.name)}
                     </div>
                     <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: '600', color: '#1a1a1a', fontSize: '15px', marginBottom: '4px' }}>
+                        <div style={{ fontWeight: '600', color: isSelected ? '#1a1a1a' : 'var(--text-primary)', fontSize: '15px', marginBottom: '4px' }}>
                             {item.name}
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
@@ -469,15 +475,15 @@ export default function Mess() {
 
     return (
         <>
-            <div style={{ background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)', minHeight: '100vh' }}>
-                <div style={{ maxWidth: '600px', margin: '0 auto', padding: '20px', paddingBottom: '180px' }}>
+            <div style={{ background: 'var(--bg-primary)', minHeight: '100vh', paddingBottom: '180px' }}>
+                <div style={{ maxWidth: '600px', margin: '0 auto', padding: '20px' }}>
 
                     {/* Header */}
                     <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: '20px' }}>
-                        <h1 style={{ fontSize: '26px', fontWeight: '800', color: '#0f172a', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            {mealIcons[selectedMeal]} Mess Menu
+                        <h1 style={{ fontSize: '26px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            {mealIcons[selectedMeal]} {t('mess_menu') || 'Mess Menu'}
                         </h1>
-                        <p style={{ fontSize: '14px', color: '#64748b' }}>
+                        <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
                             {isToday ? "Select items for today's meal" : "Viewing menu for another day"}
                         </p>
                     </motion.div>
@@ -496,15 +502,16 @@ export default function Mess() {
                                     style={{
                                         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                                         padding: '10px 14px', borderRadius: '14px',
-                                        border: isSelected ? 'none' : '1px solid #e2e8f0',
-                                        background: isSelected ? 'linear-gradient(135deg, #1DB954, #16a34a)' : 'white',
-                                        color: isSelected ? 'white' : '#64748b',
+                                        border: isSelected ? 'none' : '1px solid var(--border-color)',
+                                        background: isSelected ? 'linear-gradient(135deg, #1DB954, #16a34a)' : 'var(--bg-card)',
+                                        backdropFilter: isSelected ? 'none' : 'blur(12px)',
+                                        color: isSelected ? 'white' : 'var(--text-secondary)',
                                         flexShrink: 0, minWidth: '54px', position: 'relative', cursor: 'pointer',
-                                        boxShadow: isSelected ? '0 4px 12px rgba(29,185,84,0.3)' : '0 1px 3px rgba(0,0,0,0.05)'
+                                        boxShadow: isSelected ? '0 4px 12px rgba(29,185,84,0.3)' : 'var(--shadow-sm)'
                                     }}
                                 >
                                     <span style={{ fontSize: '11px', fontWeight: '500', marginBottom: '2px' }}>{day}</span>
-                                    <span style={{ fontSize: '18px', fontWeight: '700' }}>{dates[index]}</span>
+                                    <span style={{ fontSize: '18px', fontWeight: '700', color: isSelected ? 'white' : 'var(--text-primary)' }}>{dates[index]}</span>
                                     {isTodayDay && <span style={{ position: 'absolute', bottom: '5px', width: '5px', height: '5px', background: isSelected ? 'white' : '#1DB954', borderRadius: '50%' }} />}
                                 </motion.button>
                             );
@@ -513,7 +520,16 @@ export default function Mess() {
 
                     {/* Meal Type Selector */}
                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
-                        style={{ background: 'white', padding: '5px', borderRadius: '16px', display: 'flex', marginBottom: '24px', boxShadow: '0 2px 10px rgba(0,0,0,0.06)', position: 'relative' }}>
+                        style={{
+                            background: 'var(--bg-card)',
+                            backdropFilter: 'blur(20px) saturate(200%)',
+                            padding: '5px',
+                            borderRadius: '16px',
+                            display: 'flex',
+                            marginBottom: '24px',
+                            boxShadow: 'var(--shadow-sm)',
+                            position: 'relative'
+                        }}>
                         <motion.div
                             layoutId="mealIndicator"
                             style={{
@@ -531,26 +547,26 @@ export default function Mess() {
                                 onClick={() => setSelectedMeal(meal)}
                                 style={{
                                     flex: 1, padding: '12px 8px', borderRadius: '12px', border: 'none',
-                                    background: 'transparent', color: selectedMeal === meal ? 'white' : '#64748b',
+                                    background: 'transparent', color: selectedMeal === meal ? 'white' : 'var(--text-secondary)',
                                     fontWeight: '600', fontSize: '13px', cursor: 'pointer',
                                     position: 'relative', zIndex: 1, transition: 'color 0.2s'
                                 }}
                             >
                                 <span style={{ marginRight: '4px' }}>{mealIcons[meal]}</span>
-                                {meal.charAt(0).toUpperCase() + meal.slice(1)}
+                                {t(meal) || meal.charAt(0).toUpperCase() + meal.slice(1)}
                             </button>
                         ))}
                     </motion.div>
 
                     {/* Menu Items */}
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
-                        <h2 style={{ fontSize: '16px', fontWeight: '700', color: '#0f172a', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <Utensils size={18} /> Select Items
+                        <h2 style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Utensils size={18} /> {t('select_items') || 'Select Items'}
                         </h2>
 
                         {/* Staples */}
                         <div style={{ marginBottom: '20px' }}>
-                            <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '10px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                            <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '10px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                                 Unlimited Items
                             </p>
                             {currentMenu.staples.map((item, i) => renderStapleCard(item, i))}
@@ -559,7 +575,7 @@ export default function Mess() {
                         {/* Specials */}
                         {dailySpecial && (
                             <div>
-                                <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '10px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '10px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                                     Today's Special {dailySpecial.type === 'choice' && '(Pick One)'}
                                 </p>
                                 {(dailySpecial.type === 'choice' || dailySpecial.type === 'special') ? (
@@ -585,11 +601,14 @@ export default function Mess() {
                             animate={{ y: 0, opacity: 1 }}
                             exit={{ y: 100, opacity: 0 }}
                             style={{
-                                position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)',
-                                width: 'calc(100% - 40px)', maxWidth: '560px',
-                                background: 'white', borderRadius: '20px',
+                                position: 'fixed', bottom: '90px', left: '20px', right: '20px',
+                                maxWidth: '560px',
+                                margin: '0 auto',
+                                background: 'var(--bg-card)',
+                                backdropFilter: 'blur(12px)',
+                                borderRadius: '20px',
                                 padding: '16px 20px', boxShadow: '0 -4px 30px rgba(0,0,0,0.15)',
-                                zIndex: 100
+                                zIndex: 100, border: '1px solid var(--border-color)'
                             }}
                         >
                             {!isBooked && (
@@ -597,19 +616,19 @@ export default function Mess() {
                                     <div style={{ display: 'flex', gap: '16px' }}>
                                         <div style={{ textAlign: 'center' }}>
                                             <div style={{ fontSize: '18px', fontWeight: '700', color: '#1DB954' }}>{summary.totalCal}</div>
-                                            <div style={{ fontSize: '10px', color: '#94a3b8' }}>Cal</div>
+                                            <div style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>Cal</div>
                                         </div>
                                         <div style={{ textAlign: 'center' }}>
                                             <div style={{ fontSize: '18px', fontWeight: '700', color: '#3b82f6' }}>{summary.totalProtein}g</div>
-                                            <div style={{ fontSize: '10px', color: '#94a3b8' }}>Protein</div>
+                                            <div style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>Protein</div>
                                         </div>
                                         <div style={{ textAlign: 'center' }}>
                                             <div style={{ fontSize: '18px', fontWeight: '700', color: '#f59e0b' }}>{summary.totalCarbs}g</div>
-                                            <div style={{ fontSize: '10px', color: '#94a3b8' }}>Carbs</div>
+                                            <div style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>Carbs</div>
                                         </div>
                                     </div>
                                     <div style={{ textAlign: 'right' }}>
-                                        <div style={{ fontSize: '12px', color: '#64748b' }}>{summary.itemCount} items</div>
+                                        <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{summary.itemCount} items</div>
                                     </div>
                                 </div>
                             )}

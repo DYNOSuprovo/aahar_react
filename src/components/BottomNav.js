@@ -3,19 +3,23 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Home, MessageSquare, Droplets, UtensilsCrossed, User } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function BottomNav() {
     const pathname = usePathname();
+    const { isDark } = useTheme();
+    const { t } = useLanguage();
 
     // Hide on certain pages
     if (['/', '/login', '/signup', '/onboarding'].includes(pathname)) return null;
 
     const navItems = [
-        { icon: Home, path: '/dashboard', label: 'Home' },
-        { icon: MessageSquare, path: '/chat', label: 'Chat' },
-        { icon: Droplets, path: '/water', label: 'Water' },
-        { icon: UtensilsCrossed, path: '/mess', label: 'Mess' },
-        { icon: User, path: '/profile', label: 'Profile' },
+        { icon: Home, path: '/dashboard', labelKey: 'nav_home' },
+        { icon: MessageSquare, path: '/chat', labelKey: 'nav_chat' },
+        { icon: Droplets, path: '/water', labelKey: 'nav_water' },
+        { icon: UtensilsCrossed, path: '/mess', labelKey: 'nav_mess' },
+        { icon: User, path: '/profile', labelKey: 'nav_profile' },
     ];
 
     const activeIndex = navItems.findIndex(item => item.path === pathname);
@@ -30,11 +34,17 @@ export default function BottomNav() {
                 bottom: 0,
                 left: 0,
                 right: 0,
-                background: 'linear-gradient(180deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.5) 100%)',
-                backdropFilter: 'saturate(180%) blur(30px)',
-                WebkitBackdropFilter: 'saturate(180%) blur(30px)',
-                borderTop: '0.5px solid rgba(255, 255, 255, 0.3)',
-                boxShadow: '0 -1px 0 rgba(0,0,0,0.02)',
+                background: isDark
+                    ? 'linear-gradient(180deg, rgba(30, 30, 30, 0.4) 0%, rgba(20, 20, 20, 0.6) 100%)'
+                    : 'linear-gradient(180deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.5) 100%)',
+                backdropFilter: 'saturate(200%) blur(40px)',
+                WebkitBackdropFilter: 'saturate(200%) blur(40px)',
+                borderTop: isDark
+                    ? '0.5px solid rgba(255, 255, 255, 0.1)'
+                    : '0.5px solid rgba(255, 255, 255, 0.3)',
+                boxShadow: isDark
+                    ? '0 -1px 0 rgba(0,0,0,0.3)'
+                    : '0 -1px 0 rgba(0,0,0,0.02)',
                 zIndex: 9999
             }}
         >
@@ -90,7 +100,7 @@ export default function BottomNav() {
                                 >
                                     <Icon
                                         size={24}
-                                        color={isActive ? '#1DB954' : '#9CA3AF'}
+                                        color={isActive ? '#1DB954' : (isDark ? '#6b7280' : '#9CA3AF')}
                                         strokeWidth={isActive ? 2.5 : 2}
                                     />
                                 </motion.div>
@@ -103,10 +113,10 @@ export default function BottomNav() {
                                         fontSize: '10px',
                                         marginTop: '4px',
                                         fontWeight: isActive ? '600' : '500',
-                                        color: isActive ? '#1DB954' : '#9CA3AF'
+                                        color: isActive ? '#1DB954' : (isDark ? '#9ca3af' : '#9CA3AF')
                                     }}
                                 >
-                                    {item.label}
+                                    {t(item.labelKey)}
                                 </motion.span>
                             </Link>
                         );

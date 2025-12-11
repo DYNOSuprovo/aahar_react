@@ -2,20 +2,14 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import GoalSuccessModal from '../../components/GoalSuccessModal';
-import { Plus, Droplets, X, Award, Lightbulb, Clock, TrendingUp, Sparkles } from 'lucide-react';
+import { Plus, Droplets, X, Award, Lightbulb, Clock, TrendingUp } from 'lucide-react';
 import { Line } from 'react-chartjs-2';
 import {
-    Chart as ChartJS,
-    CategoryScale,
-    LinearScale,
-    PointElement,
-    LineElement,
-    Title,
-    Tooltip,
-    Legend,
-    Filler
+    Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler
 } from 'chart.js';
 import { useUser } from '../../context/UserContext';
+import { useLanguage } from '../../context/LanguageContext';
+import { useTheme } from '../../context/ThemeContext';
 import BottomNav from '../../components/BottomNav';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
@@ -28,25 +22,10 @@ const quickAddOptions = [
     { amount: 750, label: 'Large', icon: '🫗', color: '#F3E5F5' },
 ];
 
-// Hydration tips
-const hydrationTips = [
-    { tip: "Drink water first thing in the morning", icon: "🌅" },
-    { tip: "Keep a water bottle at your desk", icon: "💼" },
-    { tip: "Set hourly reminders to drink water", icon: "⏰" },
-    { tip: "Drink before you feel thirsty", icon: "💧" },
-    { tip: "Add lemon for flavor if plain water is boring", icon: "🍋" },
-];
-
-// Achievement badges
-const badges = [
-    { id: 'starter', name: 'Hydration Hero', desc: 'Reach 50% goal', threshold: 0.5, icon: '🏅', color: '#FFC107' },
-    { id: 'halfway', name: 'Water Warrior', desc: 'Reach 75% goal', threshold: 0.75, icon: '⚔️', color: '#2196F3' },
-    { id: 'complete', name: 'Hydration Master', desc: 'Complete goal', threshold: 1.0, icon: '👑', color: '#4CAF50' },
-    { id: 'extra', name: 'Overachiever', desc: 'Exceed 120% goal', threshold: 1.2, icon: '🌟', color: '#9C27B0' },
-];
-
 export default function Water() {
     const { user, water, addWater, removeWater, dailyStats, isLoading } = useUser();
+    const { t } = useLanguage();
+    const { isDark } = useTheme();
     const [customAmount, setCustomAmount] = useState('');
     const [isAdding, setIsAdding] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -54,6 +33,15 @@ export default function Water() {
 
     const wasGoalReachedRef = useRef(false);
     const isFirstLoadRef = useRef(true);
+
+    // Hydration tips
+    const hydrationTips = [
+        { tip: "Drink water first thing in the morning", icon: "🌅" },
+        { tip: "Keep a water bottle at your desk", icon: "💼" },
+        { tip: "Set hourly reminders to drink water", icon: "⏰" },
+        { tip: "Drink before you feel thirsty", icon: "💧" },
+        { tip: "Add lemon for flavor if plain water is boring", icon: "🍋" },
+    ];
 
     // Rotate tips
     useEffect(() => {
@@ -65,10 +53,6 @@ export default function Water() {
     const maxWater = effectiveGoal * 1.5;
     const isMaxReached = water.current >= maxWater;
     const percentage = Math.min(100, Math.round((water.current / effectiveGoal) * 100));
-    const progress = water.current / effectiveGoal;
-
-    // Get earned badges
-    const earnedBadges = badges.filter(b => progress >= b.threshold);
 
     const handleAddWater = (amount) => {
         if (isAdding || isMaxReached) return;
@@ -110,7 +94,7 @@ export default function Water() {
             fill: true,
             tension: 0.4,
             pointBackgroundColor: '#2962FF',
-            pointBorderColor: 'white',
+            pointBorderColor: isDark ? '#1e293b' : 'white',
             pointBorderWidth: 2,
             pointRadius: 5,
             pointHoverRadius: 7,
@@ -122,8 +106,12 @@ export default function Water() {
         maintainAspectRatio: false,
         plugins: { legend: { display: false } },
         scales: {
-            y: { beginAtZero: true, grid: { borderDash: [4, 4], color: '#E5E5E5' }, ticks: { color: '#9CA3AF', font: { size: 10 } } },
-            x: { grid: { display: false }, ticks: { color: '#9CA3AF', font: { size: 10 } } }
+            y: {
+                beginAtZero: true,
+                grid: { borderDash: [4, 4], color: isDark ? '#334155' : '#E5E5E5' },
+                ticks: { color: isDark ? '#94a3b8' : '#9CA3AF', font: { size: 10 } }
+            },
+            x: { grid: { display: false }, ticks: { color: isDark ? '#94a3b8' : '#9CA3AF', font: { size: 10 } } }
         }
     };
 
@@ -141,14 +129,20 @@ export default function Water() {
 
     return (
         <>
-            <div style={{ padding: '20px', paddingBottom: '100px', background: 'linear-gradient(180deg, #EFF6FF 0%, #F8FAFC 100%)', minHeight: '100vh' }}>
+            <div style={{
+                padding: '20px',
+                paddingBottom: '100px',
+                background: 'var(--bg-gradient-main)',
+                minHeight: '100vh',
+                color: 'var(--text-primary)'
+            }}>
 
                 {/* Header */}
                 <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: '20px' }}>
-                    <h1 style={{ fontSize: '26px', fontWeight: '800', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        💧 Water Tracker
+                    <h1 style={{ fontSize: '26px', fontWeight: '800', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        💧 {t('water_title')}
                     </h1>
-                    <p style={{ fontSize: '14px', color: '#64748b' }}>Stay hydrated, stay healthy</p>
+                    <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Stay hydrated, stay healthy</p>
                 </motion.div>
 
                 {/* Main Card */}
@@ -158,9 +152,6 @@ export default function Water() {
                         borderRadius: '24px', padding: '28px 24px', color: 'white', textAlign: 'center',
                         marginBottom: '20px', boxShadow: '0 10px 40px rgba(29, 78, 216, 0.3)', position: 'relative', overflow: 'hidden'
                     }}>
-                    {/* Decorative bubbles */}
-                    <div style={{ position: 'absolute', top: '20px', right: '20px', width: '60px', height: '60px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)' }} />
-                    <div style={{ position: 'absolute', bottom: '40px', left: '15px', width: '30px', height: '30px', borderRadius: '50%', background: 'rgba(255,255,255,0.08)' }} />
 
                     {/* Water Tank */}
                     <div style={{ position: 'relative', width: '160px', height: '160px', margin: '0 auto 20px' }}>
@@ -226,12 +217,10 @@ export default function Water() {
                                 display: 'flex', alignItems: 'center', gap: '6px', opacity: isMaxReached ? 0.5 : 1,
                                 flexShrink: 0
                             }}>
-                            <Plus size={18} /> Add
+                            <Plus size={18} /> {t('water_add')}
                         </motion.button>
                     </div>
                 </motion.div>
-
-
 
                 {/* Hydration Tip */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
@@ -250,12 +239,20 @@ export default function Water() {
 
                 {/* Today's Log */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
-                    style={{ background: 'white', borderRadius: '20px', padding: '20px', marginBottom: '20px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
+                    style={{
+                        background: 'var(--bg-card)',
+                        backdropFilter: 'blur(20px) saturate(200%)',
+                        borderRadius: '20px',
+                        padding: '20px',
+                        marginBottom: '20px',
+                        boxShadow: 'var(--shadow-sm)',
+                        border: '1px solid var(--border-color)'
+                    }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-                        <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <Clock size={16} color="#3B82F6" /> Today's Log
+                        <h3 style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Clock size={16} color="#3B82F6" /> {t('water_history')}
                         </h3>
-                        <span style={{ fontSize: '12px', color: '#64748b' }}>{water.history.length} entries</span>
+                        <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{water.history.length} entries</span>
                     </div>
                     {water.history.length > 0 ? (
                         <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
@@ -263,7 +260,7 @@ export default function Water() {
                                 <motion.div key={idx} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.05 }}
                                     style={{
                                         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                                        padding: '12px', background: '#f8fafc', borderRadius: '12px', marginBottom: '8px'
+                                        padding: '12px', background: 'var(--bg-secondary)', borderRadius: '12px', marginBottom: '8px'
                                     }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                         <div style={{
@@ -274,8 +271,8 @@ export default function Water() {
                                             <Droplets size={18} color="white" />
                                         </div>
                                         <div>
-                                            <div style={{ fontWeight: '600', fontSize: '14px', color: '#0f172a' }}>{entry.amount} ml</div>
-                                            <div style={{ fontSize: '11px', color: '#94a3b8' }}>{entry.time}</div>
+                                            <div style={{ fontWeight: '600', fontSize: '14px', color: 'var(--text-primary)' }}>{entry.amount} ml</div>
+                                            <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{entry.time}</div>
                                         </div>
                                     </div>
                                     <button onClick={() => removeWater(idx)}
@@ -286,7 +283,7 @@ export default function Water() {
                             ))}
                         </div>
                     ) : (
-                        <div style={{ textAlign: 'center', padding: '30px', color: '#94a3b8' }}>
+                        <div style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>
                             <Droplets size={40} style={{ opacity: 0.3, marginBottom: '8px' }} />
                             <p style={{ fontSize: '13px' }}>No water logged yet</p>
                         </div>
@@ -295,8 +292,15 @@ export default function Water() {
 
                 {/* Weekly Chart */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-                    style={{ background: 'white', borderRadius: '20px', padding: '20px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
-                    <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#0f172a', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    style={{
+                        background: 'var(--bg-card)',
+                        backdropFilter: 'blur(20px) saturate(200%)',
+                        borderRadius: '20px',
+                        padding: '20px',
+                        boxShadow: 'var(--shadow-sm)',
+                        border: '1px solid var(--border-color)'
+                    }}>
+                    <h3 style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <TrendingUp size={16} color="#10B981" /> Weekly Overview
                     </h3>
                     <div style={{ height: '200px' }}>

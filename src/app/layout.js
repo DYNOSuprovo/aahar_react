@@ -1,8 +1,11 @@
 import './globals.css';
 import BottomNav from '../components/BottomNav';
 import FeedbackButton from '../components/FeedbackButton';
+import BackButtonHandler from '../components/BackButtonHandler';
 import { UserProvider } from '../context/UserContext';
 import { AuthProvider } from '../context/AuthContext';
+import { ThemeProvider } from '../context/ThemeContext';
+import { LanguageProvider } from '../context/LanguageContext';
 
 export const metadata = {
     title: 'Aahar - Nutrition with Tradition',
@@ -26,7 +29,7 @@ export default function RootLayout({ children }) {
     const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
 
     return (
-        <html lang="en">
+        <html lang="en" suppressHydrationWarning>
             <head>
                 {/* Google Analytics - Only loads if GA_ID is set */}
                 {GA_ID && (
@@ -49,17 +52,21 @@ export default function RootLayout({ children }) {
                 )}
             </head>
             <body>
-                <div className="container">
-                    <AuthProvider>
-                        <UserProvider>
-                            {children}
-                        </UserProvider>
-                    </AuthProvider>
-                    <BottomNav />
-                    <FeedbackButton />
-                </div>
+                <ThemeProvider>
+                    <LanguageProvider>
+                        <div className="container">
+                            <AuthProvider>
+                                <UserProvider>
+                                    {children}
+                                </UserProvider>
+                            </AuthProvider>
+                            <BackButtonHandler />
+                            <BottomNav />
+                            <FeedbackButton />
+                        </div>
+                    </LanguageProvider>
+                </ThemeProvider>
             </body>
         </html>
     );
 }
-

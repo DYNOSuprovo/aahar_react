@@ -1,13 +1,16 @@
 "use client";
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUser } from '../../context/UserContext';
-import { ChevronLeft, ChevronRight, Calendar, Plus, Minus, Search, X, Utensils, Trash2, Flame, Zap, Target, TrendingUp, Lightbulb } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
+import { useTheme } from '../../context/ThemeContext';
+import { Plus, Minus, Search, X, Utensils, Trash2, Flame, Zap, Target, Lightbulb } from 'lucide-react';
 import { searchFood, analyzeMeal } from '../../lib/api';
 import BottomNav from '../../components/BottomNav';
 
 // Circular Progress Ring Component
 const CalorieRing = ({ current, goal, size = 200 }) => {
+    const { t } = useLanguage();
     const strokeWidth = 12;
     const radius = (size - strokeWidth) / 2;
     const circumference = radius * 2 * Math.PI;
@@ -29,8 +32,9 @@ const CalorieRing = ({ current, goal, size = 200 }) => {
                     cy={size / 2}
                     r={radius}
                     fill="none"
-                    stroke="#E5E7EB"
+                    stroke="var(--border-color)"
                     strokeWidth={strokeWidth}
+                    opacity="0.3"
                 />
                 {/* Progress circle */}
                 <motion.circle
@@ -47,7 +51,6 @@ const CalorieRing = ({ current, goal, size = 200 }) => {
                     transition={{ duration: 1.5, ease: "easeOut" }}
                 />
             </svg>
-            {/* Center content */}
             <div style={{
                 position: 'absolute',
                 inset: 0,
@@ -60,11 +63,11 @@ const CalorieRing = ({ current, goal, size = 200 }) => {
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ delay: 0.5, type: "spring" }}
-                    style={{ fontSize: '36px', fontWeight: '800', color: '#1a1a1a' }}
+                    style={{ fontSize: '36px', fontWeight: '800', color: 'var(--text-primary)' }}
                 >
                     {current}
                 </motion.div>
-                <div style={{ fontSize: '13px', color: '#6B7280' }}>of {goal} cal</div>
+                <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>of {goal} cal</div>
                 <div style={{
                     marginTop: '4px',
                     padding: '4px 12px',
@@ -81,47 +84,10 @@ const CalorieRing = ({ current, goal, size = 200 }) => {
     );
 };
 
-// Animated Counter
-const CountUp = ({ end, duration = 1500 }) => {
-    const [count, setCount] = useState(0);
-    useEffect(() => {
-        let startTime;
-        let animationFrame;
-        const animate = (time) => {
-            if (!startTime) startTime = time;
-            const progress = time - startTime;
-            const percentage = 1 - Math.pow(1 - Math.min(progress / duration, 1), 3);
-            setCount(Math.floor(end * percentage));
-            if (progress < duration) {
-                animationFrame = requestAnimationFrame(animate);
-            }
-        };
-        animationFrame = requestAnimationFrame(animate);
-        return () => cancelAnimationFrame(animationFrame);
-    }, [end, duration]);
-    return <span>{count}</span>;
-};
-
-// Greeting based on time
-const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return { text: 'Good morning', emoji: '🌅' };
-    if (hour < 17) return { text: 'Good afternoon', emoji: '☀️' };
-    if (hour < 21) return { text: 'Good evening', emoji: '🌆' };
-    return { text: 'Good night', emoji: '🌙' };
-};
-
-// Daily tips
-const dailyTips = [
-    { icon: '💧', tip: 'Drink at least 8 glasses of water today!' },
-    { icon: '🥗', tip: 'Try adding more vegetables to your meals.' },
-    { icon: '🏃', tip: 'A 30-minute walk burns around 150 calories.' },
-    { icon: '😴', tip: 'Good sleep helps maintain healthy weight.' },
-    { icon: '🍎', tip: 'An apple a day keeps the doctor away!' }
-];
-
 export default function Dashboard() {
-    const { user, meals, addFood, removeFood, updateFoodQuantity, preferences } = useUser();
+    const { user, meals, addFood, removeFood, preferences } = useUser();
+    const { t } = useLanguage();
+    const { isDark } = useTheme();
     const [isAddFoodOpen, setIsAddFoodOpen] = useState(false);
     const [selectedMealType, setSelectedMealType] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
@@ -129,24 +95,10 @@ export default function Dashboard() {
     const [isSearching, setIsSearching] = useState(false);
     const [selectedItemForQuant, setSelectedItemForQuant] = useState(null);
     const [itemQuantity, setItemQuantity] = useState(1);
-    const [currentTipIndex, setCurrentTipIndex] = useState(0);
-
-    const greeting = getGreeting();
-    const currentTip = dailyTips[currentTipIndex];
-
-    // Rotate tips
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setCurrentTipIndex(prev => (prev + 1) % dailyTips.length);
-        }, 5000);
-        return () => clearInterval(interval);
-    }, []);
 
     // Calculate totals
-    const totalCalories = meals.breakfast.reduce((acc, item) => acc + parseInt(item.calories), 0) +
-        meals.lunch.reduce((acc, item) => acc + parseInt(item.calories), 0) +
-        meals.snack.reduce((acc, item) => acc + parseInt(item.calories), 0) +
-        meals.dinner.reduce((acc, item) => acc + parseInt(item.calories), 0);
+    const totalCalories = ['breakfast', 'lunch', 'snack', 'dinner'].reduce((acc, type) =>
+        acc + meals[type].reduce((sum, item) => sum + parseInt(item.calories), 0), 0);
 
     const calculateTotal = (nutrient) => {
         const allMeals = [...meals.breakfast, ...meals.lunch, ...meals.snack, ...meals.dinner];
@@ -157,6 +109,16 @@ export default function Dashboard() {
     const totalCarbs = calculateTotal('carbs');
     const totalFat = calculateTotal('fat');
     const remainingCalories = user.goalCalories - totalCalories;
+
+    // Greeting logic
+    const getGreeting = () => {
+        const hour = new Date().getHours();
+        if (hour < 12) return { text: t('dashboard_greeting') || 'Good Morning', emoji: '🌅' };
+        if (hour < 17) return { text: t('dashboard_greeting') || 'Good Afternoon', emoji: '☀️' };
+        if (hour < 21) return { text: t('dashboard_greeting') || 'Good Evening', emoji: '🌆' };
+        return { text: t('dashboard_greeting') || 'Good Night', emoji: '🌙' };
+    };
+    const greeting = getGreeting();
 
     const openAddFood = (mealType) => {
         setSelectedMealType(mealType);
@@ -182,10 +144,6 @@ export default function Dashboard() {
             fat: (getVal("Fat (g)") * multiplier).toFixed(1),
             quantity: multiplier,
             servingSize: selectedItemForQuant["Serving Size"],
-            baseCalories: getVal("Calories (kcal)"),
-            baseProtein: getVal("Protein (g)"),
-            baseCarbs: getVal("Carbs (g)"),
-            baseFat: getVal("Fat (g)")
         });
 
         setIsAddFoodOpen(false);
@@ -194,6 +152,7 @@ export default function Dashboard() {
         setSearchTerm('');
     };
 
+    // Filter by preferences
     const filterByPreferences = useCallback((results) => {
         if (!results || results.length === 0) return [];
         let filtered = results;
@@ -208,15 +167,9 @@ export default function Dashboard() {
                 return !nonVegKeywords.some(keyword => dishName.includes(keyword) || category.includes(keyword));
             });
         }
-        if (preferences.glutenFree) {
-            filtered = filtered.filter(item => !glutenKeywords.some(keyword => (item["Dish Name"]?.toLowerCase() || '').includes(keyword)));
-        }
-        if (preferences.dairyFree) {
-            filtered = filtered.filter(item => !dairyKeywords.some(keyword => (item["Dish Name"]?.toLowerCase() || '').includes(keyword)));
-        }
-        if (preferences.lowCarb) {
-            filtered = filtered.filter(item => (parseFloat(item["Carbs (g)"]) || 0) < 15);
-        }
+        if (preferences.glutenFree) filtered = filtered.filter(item => !glutenKeywords.some(keyword => (item["Dish Name"]?.toLowerCase() || '').includes(keyword)));
+        if (preferences.dairyFree) filtered = filtered.filter(item => !dairyKeywords.some(keyword => (item["Dish Name"]?.toLowerCase() || '').includes(keyword)));
+
         return filtered;
     }, [preferences]);
 
@@ -225,7 +178,6 @@ export default function Dashboard() {
             if (searchTerm.length > 2) {
                 setIsSearching(true);
                 const results = await searchFood(searchTerm);
-                // Show all results regardless of preferences when searching explicitly
                 setSearchResults(results);
                 setIsSearching(false);
             } else {
@@ -233,8 +185,9 @@ export default function Dashboard() {
             }
         }, 500);
         return () => clearTimeout(delayDebounceFn);
-    }, [searchTerm, preferences, filterByPreferences]);
+    }, [searchTerm]);
 
+    {/* AI Analysis State */ }
     const [analysis, setAnalysis] = useState(null);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
 
@@ -244,52 +197,47 @@ export default function Dashboard() {
         try {
             const allMeals = [...meals.breakfast, ...meals.lunch, ...meals.snack, ...meals.dinner];
             if (allMeals.length === 0) {
-                setAnalysis({ type: 'warning', text: "You haven't logged any meals yet. Please add some food items so I can analyze your intake." });
+                setAnalysis({ type: 'warning', text: "Please add some food items first!" });
                 setIsAnalyzing(false);
                 return;
             }
             const dishNames = allMeals.map(m => m.name);
             const result = await analyzeMeal(dishNames);
-
-            // Check for error strings in successful response
-            if (!result.analysis || result.analysis.startsWith("An error occurred") || result.analysis.startsWith("Sorry")) {
-                throw new Error("AI Generation Failed");
-            }
-
             setAnalysis({ type: 'success', text: result.analysis });
         } catch (error) {
-            setAnalysis({ type: 'error', text: "I'm having trouble connecting to my brain right now. Please try again later! 🧠🔄" });
+            setAnalysis({ type: 'error', text: "AI is currently unavailable. Try again later." });
         } finally {
             setIsAnalyzing(false);
         }
     };
 
-    const mealIcons = { breakfast: '🍳', lunch: '🍛', snack: '🍿', dinner: '🍲' };
-
-    const MealSection = ({ title, items, type }) => (
+    const MealSection = ({ titleKey, items, type }) => (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
             style={{
-                background: 'white',
+                background: 'var(--bg-card)',
+                backdropFilter: 'blur(20px) saturate(200%)',
+                WebkitBackdropFilter: 'blur(12px)',
                 borderRadius: '20px',
                 padding: '20px',
                 marginBottom: '16px',
-                boxShadow: '0 2px 12px rgba(0,0,0,0.04)'
+                boxShadow: 'var(--shadow-sm)',
+                border: '1px solid var(--border-color)'
             }}
         >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ fontSize: '24px' }}>{mealIcons[type]}</span>
-                    <h3 style={{ fontSize: '17px', fontWeight: '700', color: '#1a1a1a' }}>{title}</h3>
+                    <span style={{ fontSize: '24px' }}>{type === 'breakfast' ? '🍳' : type === 'lunch' ? '🍛' : type === 'snack' ? '🍿' : '🍲'}</span>
+                    <h3 style={{ fontSize: '17px', fontWeight: '700', color: 'var(--text-primary)' }}>{t(titleKey)}</h3>
                 </div>
                 <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => openAddFood(type)}
                     style={{
-                        background: 'linear-gradient(135deg, #1DB954 0%, #0d7a3a 100%)',
+                        background: '#1DB954',
                         border: 'none',
                         color: 'white',
                         padding: '8px 16px',
@@ -303,7 +251,7 @@ export default function Dashboard() {
                         boxShadow: '0 4px 12px rgba(29, 185, 84, 0.25)'
                     }}
                 >
-                    <Plus size={16} /> Add
+                    <Plus size={16} /> {t('dashboard_add_food')}
                 </motion.button>
             </div>
 
@@ -314,14 +262,15 @@ export default function Dashboard() {
                             key={idx}
                             initial={{ opacity: 0, x: -20 }}
                             animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: 20 }}
                             style={{
-                                background: '#F9FAFB',
+                                background: 'var(--bg-secondary)',
+                                backdropFilter: 'blur(20px) saturate(200%)',
                                 borderRadius: '14px',
                                 padding: '14px',
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: '12px'
+                                gap: '12px',
+                                border: '1px solid var(--border-light)'
                             }}
                         >
                             <div style={{
@@ -336,9 +285,9 @@ export default function Dashboard() {
                                 <Utensils size={20} color="#1DB954" />
                             </div>
                             <div style={{ flex: 1 }}>
-                                <div style={{ fontWeight: '600', fontSize: '15px', color: '#1a1a1a' }}>{item.name}</div>
-                                <div style={{ fontSize: '13px', color: '#6B7280', marginTop: '2px' }}>
-                                    {item.calories} cal • {item.servingSize || '1 serving'}
+                                <div style={{ fontWeight: '600', fontSize: '15px', color: 'var(--text-primary)' }}>{item.name}</div>
+                                <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                                    {item.calories} cal
                                 </div>
                             </div>
                             <motion.button
@@ -346,7 +295,7 @@ export default function Dashboard() {
                                 whileTap={{ scale: 0.9 }}
                                 onClick={() => removeFood(type, idx)}
                                 style={{
-                                    background: '#FEE2E2',
+                                    background: 'rgba(239, 68, 68, 0.1)',
                                     border: 'none',
                                     borderRadius: '10px',
                                     padding: '8px',
@@ -363,62 +312,43 @@ export default function Dashboard() {
                 <div style={{
                     textAlign: 'center',
                     padding: '24px',
-                    background: '#F9FAFB',
+                    background: 'var(--bg-secondary)',
                     borderRadius: '14px',
-                    color: '#9CA3AF'
+                    color: 'var(--text-muted)'
                 }}>
                     <div style={{ fontSize: '32px', marginBottom: '8px' }}>🍽️</div>
-                    <div style={{ fontSize: '14px' }}>No food logged yet</div>
-                    <div style={{ fontSize: '12px', marginTop: '4px' }}>Tap "Add" to log your {title.toLowerCase()}</div>
+                    <div style={{ fontSize: '14px' }}>No food logged</div>
                 </div>
             )}
         </motion.div>
     );
 
     return (
-        <div style={{ background: '#F3F4F6', minHeight: '100vh', paddingBottom: '100px' }}>
-            {/* Header with Greeting */}
+        <div style={{ background: 'var(--bg-primary)', minHeight: '100vh', paddingBottom: '100px' }}>
+            {/* Header */}
             <motion.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 style={{
-                    background: 'linear-gradient(135deg, #1DB954 0%, #0d7a3a 100%)',
+                    background: 'var(--bg-gradient-header)',
                     padding: '24px 20px 80px 20px',
                     borderRadius: '0 0 32px 32px'
                 }}
             >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                     <div>
-                        <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '14px', marginBottom: '4px' }}>
+                        <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: '14px', marginBottom: '4px' }}>
                             {greeting.emoji} {greeting.text}
                         </div>
                         <h1 style={{ color: 'white', fontSize: '24px', fontWeight: '700' }}>
-                            {user.name || 'User'}!
+                            {user.name || t('onboarding_name')}!
                         </h1>
                     </div>
-                    <motion.div
-                        whileHover={{ scale: 1.1 }}
-                        style={{
-                            width: '48px',
-                            height: '48px',
-                            borderRadius: '50%',
-                            background: 'rgba(255,255,255,0.2)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: 'white',
-                            fontWeight: '700',
-                            fontSize: '18px'
-                        }}
-                    >
-                        {(user.name || 'U')[0].toUpperCase()}
-                    </motion.div>
                 </div>
 
-                {/* Quick Stats */}
                 <div style={{ display: 'flex', gap: '12px' }}>
                     {[
-                        { icon: Target, label: 'Goal', value: `${user.goalCalories} cal` },
+                        { icon: Target, label: t('dashboard_goal'), value: `${user.goalCalories} cal` },
                         { icon: Flame, label: 'Burned', value: '0 cal' },
                         { icon: Zap, label: 'Streak', value: '7 days' }
                     ].map((stat, i) => (
@@ -438,7 +368,7 @@ export default function Dashboard() {
                         >
                             <stat.icon size={20} color="white" style={{ marginBottom: '6px' }} />
                             <div style={{ color: 'white', fontWeight: '700', fontSize: '14px' }}>{stat.value}</div>
-                            <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px' }}>{stat.label}</div>
+                            <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '11px' }}>{stat.label}</div>
                         </motion.div>
                     ))}
                 </div>
@@ -451,17 +381,20 @@ export default function Dashboard() {
                 transition={{ delay: 0.2 }}
                 style={{
                     margin: '-50px 20px 20px 20px',
-                    background: 'white',
+                    background: 'var(--bg-card)',
+                    backdropFilter: 'blur(20px) saturate(200%)',
+                    WebkitBackdropFilter: 'blur(12px)',
                     borderRadius: '24px',
                     padding: '24px',
-                    boxShadow: '0 10px 40px rgba(0,0,0,0.08)'
+                    boxShadow: 'var(--card-shadow)',
+                    border: '1px solid var(--border-color)'
                 }}
             >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around' }}>
                     <CalorieRing current={totalCalories} goal={user.goalCalories} size={160} />
                     <div style={{ textAlign: 'left' }}>
                         <div style={{ marginBottom: '16px' }}>
-                            <div style={{ color: '#6B7280', fontSize: '13px' }}>Remaining</div>
+                            <div style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>{t('dashboard_remaining')}</div>
                             <div style={{
                                 fontSize: '28px',
                                 fontWeight: '800',
@@ -472,62 +405,28 @@ export default function Dashboard() {
                         </div>
                         <div style={{ display: 'flex', gap: '12px' }}>
                             <div>
-                                <div style={{ fontSize: '16px', fontWeight: '700', color: '#1a1a1a' }}>{Math.round(totalProtein)}g</div>
-                                <div style={{ fontSize: '11px', color: '#6B7280' }}>Protein</div>
+                                <div style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text-primary)' }}>{Math.round(totalProtein)}g</div>
+                                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Protein</div>
                             </div>
                             <div>
-                                <div style={{ fontSize: '16px', fontWeight: '700', color: '#1a1a1a' }}>{Math.round(totalCarbs)}g</div>
-                                <div style={{ fontSize: '11px', color: '#6B7280' }}>Carbs</div>
+                                <div style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text-primary)' }}>{Math.round(totalCarbs)}g</div>
+                                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Carbs</div>
                             </div>
                             <div>
-                                <div style={{ fontSize: '16px', fontWeight: '700', color: '#1a1a1a' }}>{Math.round(totalFat)}g</div>
-                                <div style={{ fontSize: '11px', color: '#6B7280' }}>Fat</div>
+                                <div style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text-primary)' }}>{Math.round(totalFat)}g</div>
+                                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Fat</div>
                             </div>
                         </div>
                     </div>
                 </div>
             </motion.div>
 
-            {/* Daily Tip Card */}
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                style={{
-                    margin: '0 20px 20px 20px',
-                    background: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)',
-                    borderRadius: '16px',
-                    padding: '16px 20px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px'
-                }}
-            >
-                <Lightbulb size={24} color="#D97706" />
-                <AnimatePresence mode="wait">
-                    <motion.div
-                        key={currentTipIndex}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        style={{ flex: 1 }}
-                    >
-                        <div style={{ fontSize: '14px', color: '#92400E', fontWeight: '500' }}>
-                            {currentTip.icon} {currentTip.tip}
-                        </div>
-                    </motion.div>
-                </AnimatePresence>
-            </motion.div>
-
             {/* Meals Section */}
             <div style={{ padding: '0 20px' }}>
-                <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#1a1a1a', marginBottom: '16px' }}>
-                    Today's Meals
-                </h2>
-                <MealSection title="Breakfast" items={meals.breakfast} type="breakfast" />
-                <MealSection title="Lunch" items={meals.lunch} type="lunch" />
-                <MealSection title="Snack" items={meals.snack} type="snack" />
-                <MealSection title="Dinner" items={meals.dinner} type="dinner" />
+                <MealSection titleKey="dashboard_breakfast" items={meals.breakfast} type="breakfast" />
+                <MealSection titleKey="dashboard_lunch" items={meals.lunch} type="lunch" />
+                <MealSection titleKey="dashboard_snack" items={meals.snack} type="snack" />
+                <MealSection titleKey="dashboard_dinner" items={meals.dinner} type="dinner" />
             </div>
 
             {/* AI Analysis Button */}
@@ -555,38 +454,27 @@ export default function Dashboard() {
                     }}
                 >
                     {isAnalyzing ? (
-                        <motion.div
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                            style={{ width: '20px', height: '20px', border: '2px solid white', borderTopColor: 'transparent', borderRadius: '50%' }}
-                        />
+                        <span>Processing...</span>
                     ) : (
                         <>✨ Analyze My Day with AI</>
                     )}
                 </motion.button>
-
                 {analysis && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        style={{
-                            marginTop: '16px',
-                            padding: '20px',
-                            background: analysis.type === 'error' ? '#FEE2E2' : (analysis.type === 'warning' ? '#FEF3C7' : 'linear-gradient(135deg, #EDE9FE 0%, #DDD6FE 100%)'),
-                            borderRadius: '16px',
-                            color: analysis.type === 'error' ? '#B91C1C' : (analysis.type === 'warning' ? '#92400E' : '#5B21B6'),
-                            border: analysis.type === 'error' ? '1px solid #FECACA' : 'none'
-                        }}
-                    >
-                        <div style={{ fontWeight: '700', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            {analysis.type === 'error' ? '⚠️ Only Human Here' : (analysis.type === 'warning' ? '🍽️ Plate Empty' : '🤖 AI Insights')}
-                        </div>
-                        <p style={{ fontSize: '14px', lineHeight: '1.6' }}>{analysis.text || analysis}</p>
-                    </motion.div>
+                    <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{
+                        marginTop: '16px',
+                        padding: '16px',
+                        background: 'var(--bg-card)',
+                        backdropFilter: 'blur(20px) saturate(200%)',
+                        borderRadius: '16px',
+                        border: '1px solid var(--border-color)',
+                        color: 'var(--text-primary)'
+                    }}>
+                        {analysis.text}
+                    </motion.p>
                 )}
             </div>
 
-            {/* Add Food Modal - Using existing logic */}
+            {/* Add Food Modal */}
             <AnimatePresence>
                 {isAddFoodOpen && (
                     <motion.div
@@ -610,7 +498,8 @@ export default function Dashboard() {
                             exit={{ y: '100%' }}
                             transition={{ type: "spring", damping: 25, stiffness: 200 }}
                             style={{
-                                background: 'white',
+                                background: 'var(--bg-card)',
+                                backdropFilter: 'blur(20px) saturate(200%)',
                                 borderRadius: '24px 24px 0 0',
                                 padding: '24px',
                                 height: '85vh',
@@ -619,34 +508,34 @@ export default function Dashboard() {
                             }}
                         >
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                                <h3 style={{ fontSize: '20px', fontWeight: '700' }}>
-                                    {mealIcons[selectedMealType]} Add to {selectedMealType}
+                                <h3 style={{ fontSize: '20px', fontWeight: '700', color: 'var(--text-primary)' }}>
+                                    Add Food
                                 </h3>
                                 <button onClick={() => { setIsAddFoodOpen(false); setSelectedItemForQuant(null); }}
-                                    style={{ background: '#F3F4F6', border: 'none', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <X size={20} />
+                                    style={{ background: 'var(--bg-secondary)', border: 'none', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <X size={20} color="var(--text-primary)" />
                                 </button>
                             </div>
 
                             {selectedItemForQuant ? (
-                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                                    <div style={{ background: '#F9FAFB', borderRadius: '16px', padding: '24px', textAlign: 'center', marginBottom: '24px' }}>
-                                        <div style={{ fontSize: '22px', fontWeight: '700', color: '#1a1a1a', marginBottom: '8px' }}>
+                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                                    <div style={{ background: 'var(--bg-secondary)', borderRadius: '16px', padding: '24px', textAlign: 'center', marginBottom: '24px' }}>
+                                        <div style={{ fontSize: '22px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '8px' }}>
                                             {selectedItemForQuant["Dish Name"]}
                                         </div>
-                                        <div style={{ color: '#6B7280', fontSize: '14px' }}>
+                                        <div style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
                                             {selectedItemForQuant["Calories (kcal)"]} cal per serving
                                         </div>
                                     </div>
 
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '32px', marginBottom: '32px' }}>
                                         <motion.button whileTap={{ scale: 0.9 }} onClick={() => setItemQuantity(q => Math.max(0.5, q - 0.5))}
-                                            style={{ width: '56px', height: '56px', borderRadius: '50%', border: 'none', background: '#F3F4F6', fontSize: '24px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            style={{ width: '56px', height: '56px', borderRadius: '50%', border: 'none', background: 'var(--bg-secondary)', fontSize: '24px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-primary)' }}>
                                             <Minus size={24} />
                                         </motion.button>
                                         <div style={{ textAlign: 'center' }}>
                                             <div style={{ fontSize: '48px', fontWeight: '800', color: '#1DB954' }}>{itemQuantity}</div>
-                                            <div style={{ fontSize: '14px', color: '#6B7280' }}>servings</div>
+                                            <div style={{ fontSize: '14px', color: 'var(--text-muted)' }}>servings</div>
                                         </div>
                                         <motion.button whileTap={{ scale: 0.9 }} onClick={() => setItemQuantity(q => q + 0.5)}
                                             style={{ width: '56px', height: '56px', borderRadius: '50%', border: 'none', background: '#1DB954', color: 'white', fontSize: '24px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -654,151 +543,26 @@ export default function Dashboard() {
                                         </motion.button>
                                     </div>
 
-                                    <div style={{ background: '#E8F5E9', borderRadius: '16px', padding: '20px', display: 'flex', justifyContent: 'space-around', marginBottom: 'auto' }}>
-                                        <div style={{ textAlign: 'center' }}>
-                                            <div style={{ fontWeight: '700', color: '#1DB954', fontSize: '18px' }}>{Math.round(selectedItemForQuant["Calories (kcal)"] * itemQuantity)}</div>
-                                            <div style={{ fontSize: '12px', color: '#16a34a' }}>Calories</div>
-                                        </div>
-                                        <div style={{ textAlign: 'center' }}>
-                                            <div style={{ fontWeight: '700', color: '#1DB954', fontSize: '18px' }}>{(selectedItemForQuant["Protein (g)"] * itemQuantity).toFixed(1)}g</div>
-                                            <div style={{ fontSize: '12px', color: '#16a34a' }}>Protein</div>
-                                        </div>
-                                        <div style={{ textAlign: 'center' }}>
-                                            <div style={{ fontWeight: '700', color: '#1DB954', fontSize: '18px' }}>{(selectedItemForQuant["Carbs (g)"] * itemQuantity).toFixed(1)}g</div>
-                                            <div style={{ fontSize: '12px', color: '#16a34a' }}>Carbs</div>
-                                        </div>
-                                    </div>
-
                                     <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
-                                        <button onClick={() => setSelectedItemForQuant(null)} style={{ flex: 1, padding: '16px', borderRadius: '16px', border: 'none', background: '#F3F4F6', fontWeight: '600', cursor: 'pointer' }}>Back</button>
-                                        <motion.button whileTap={{ scale: 0.98 }} onClick={confirmAddFood} style={{ flex: 2, padding: '16px', borderRadius: '16px', border: 'none', background: 'linear-gradient(135deg, #1DB954 0%, #0d7a3a 100%)', color: 'white', fontWeight: '700', cursor: 'pointer', boxShadow: '0 4px 12px rgba(29, 185, 84, 0.35)' }}>Add Food</motion.button>
+                                        <button onClick={() => setSelectedItemForQuant(null)} style={{ flex: 1, padding: '16px', borderRadius: '16px', border: 'none', background: 'var(--bg-secondary)', fontWeight: '600', cursor: 'pointer', color: 'var(--text-primary)' }}>Back</button>
+                                        <motion.button whileTap={{ scale: 0.98 }} onClick={confirmAddFood} style={{ flex: 2, padding: '16px', borderRadius: '16px', border: 'none', background: '#1DB954', color: 'white', fontWeight: '700', cursor: 'pointer' }}>Add Food</motion.button>
                                     </div>
-                                </motion.div>
+                                </div>
                             ) : (
                                 <>
-                                    <div style={{ display: 'flex', alignItems: 'center', background: '#F3F4F6', borderRadius: '14px', padding: '14px', marginBottom: '20px' }}>
-                                        <Search size={20} color="#6B7280" style={{ marginRight: '10px' }} />
+                                    <div style={{ display: 'flex', alignItems: 'center', background: 'var(--input-bg)', borderRadius: '14px', padding: '14px', marginBottom: '20px', border: '1px solid var(--border-color)' }}>
+                                        <Search size={20} color="var(--text-muted)" style={{ marginRight: '10px' }} />
                                         <input type="text" placeholder="Search for food..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-                                            style={{ border: 'none', background: 'transparent', outline: 'none', flex: 1, fontSize: '16px' }} autoFocus />
+                                            style={{ border: 'none', background: 'transparent', outline: 'none', flex: 1, fontSize: '16px', color: 'var(--text-primary)' }} autoFocus />
                                     </div>
                                     <div style={{ flex: 1, overflowY: 'auto' }}>
-                                        {isSearching && <div style={{ textAlign: 'center', color: '#6B7280', padding: '20px' }}>Searching...</div>}
                                         {!isSearching && searchResults.map((item, idx) => (
-                                            <motion.div key={idx} whileHover={{ background: '#F9FAFB' }} onClick={() => handleFoodClick(item)}
-                                                style={{ padding: '16px', borderBottom: '1px solid #F3F4F6', cursor: 'pointer', borderRadius: '12px' }}>
-                                                <div style={{ fontWeight: '600', marginBottom: '4px' }}>{item["Dish Name"]}</div>
-                                                <div style={{ fontSize: '14px', color: '#6B7280' }}>{item["Calories (kcal)"]} cal • {item["Serving Size"]}</div>
+                                            <motion.div key={idx} whileHover={{ background: 'var(--bg-secondary)' }} onClick={() => handleFoodClick(item)}
+                                                style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', cursor: 'pointer', borderRadius: '12px' }}>
+                                                <div style={{ fontWeight: '600', marginBottom: '4px', color: 'var(--text-primary)' }}>{item["Dish Name"]}</div>
+                                                <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>{item["Calories (kcal)"]} cal • {item["Serving Size"]}</div>
                                             </motion.div>
                                         ))}
-                                        {!isSearching && searchResults.length >= 100 && (
-                                            <div style={{ textAlign: 'center', padding: '12px', fontSize: '12px', color: '#6B7280', fontStyle: 'italic' }}>
-                                                Showing top 100 matches. Refine search to see more.
-                                            </div>
-                                        )}
-                                        {!isSearching && searchTerm.length > 2 && searchResults.length === 0 && (
-                                            <div style={{ textAlign: 'center', color: '#9CA3AF', marginTop: '40px' }}>
-                                                <div style={{ fontSize: '48px', marginBottom: '12px' }}>🔍</div>
-                                                No results found
-                                            </div>
-                                        )}
-                                        {!searchTerm && (
-                                            <div>
-                                                <div style={{ fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '12px' }}>
-                                                    🔥 Popular Foods
-                                                </div>
-                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '20px' }}>
-                                                    {[
-                                                        { name: 'Roti', emoji: '🫓', cal: 71, tags: [] },
-                                                        { name: 'Rice', emoji: '🍚', cal: 130, tags: [] },
-                                                        { name: 'Dal', emoji: '🍲', cal: 104, tags: [] },
-                                                        { name: 'Paneer', emoji: '🧀', cal: 265, tags: ['dairy'] },
-                                                        { name: 'Egg', emoji: '🥚', cal: 78, tags: ['nonveg'] },
-                                                        { name: 'Idli', emoji: '🥟', cal: 39, tags: [] },
-                                                        { name: 'Dosa', emoji: '🥞', cal: 168, tags: [] },
-                                                        { name: 'Paratha', emoji: '🫓', cal: 260, tags: [] },
-                                                        { name: 'Poha', emoji: '🍛', cal: 180, tags: [] },
-                                                        { name: 'Upma', emoji: '🥣', cal: 165, tags: [] },
-                                                        { name: 'Chicken Curry', emoji: '🍗', cal: 243, tags: ['nonveg'] },
-                                                        { name: 'Curd', emoji: '🥛', cal: 98, tags: ['dairy'] }
-                                                    ]
-                                                        .filter(food => {
-                                                            if (preferences.vegetarian && food.tags.includes('nonveg')) return false;
-                                                            if (preferences.dairyFree && food.tags.includes('dairy')) return false;
-                                                            return true;
-                                                        })
-                                                        .map((food, idx) => (
-                                                            <motion.button
-                                                                key={idx}
-                                                                whileHover={{ scale: 1.05 }}
-                                                                whileTap={{ scale: 0.95 }}
-                                                                onClick={() => setSearchTerm(food.name)}
-                                                                style={{
-                                                                    padding: '8px 14px',
-                                                                    background: '#E8F5E9',
-                                                                    border: 'none',
-                                                                    borderRadius: '20px',
-                                                                    cursor: 'pointer',
-                                                                    display: 'flex',
-                                                                    alignItems: 'center',
-                                                                    gap: '6px',
-                                                                    fontSize: '13px',
-                                                                    fontWeight: '500',
-                                                                    color: '#1a1a1a'
-                                                                }}
-                                                            >
-                                                                <span>{food.emoji}</span>
-                                                                <span>{food.name}</span>
-                                                                <span style={{ color: '#6B7280', fontSize: '11px' }}>{food.cal}cal</span>
-                                                            </motion.button>
-                                                        ))}
-                                                </div>
-                                                <div style={{ fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '12px' }}>
-                                                    🥗 Healthy Choices
-                                                </div>
-                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '20px' }}>
-                                                    {[
-                                                        { name: 'Sprouts Salad', emoji: '🥗', cal: 82, tags: [] },
-                                                        { name: 'Oats', emoji: '🥣', cal: 150, tags: [] },
-                                                        { name: 'Green Salad', emoji: '🥬', cal: 45, tags: [] },
-                                                        { name: 'Fruit Bowl', emoji: '🍎', cal: 120, tags: [] },
-                                                        { name: 'Moong Dal', emoji: '🫘', cal: 88, tags: [] },
-                                                        { name: 'Buttermilk', emoji: '🥛', cal: 40, tags: ['dairy'] }
-                                                    ]
-                                                        .filter(food => {
-                                                            if (preferences.dairyFree && food.tags.includes('dairy')) return false;
-                                                            return true;
-                                                        })
-                                                        .map((food, idx) => (
-                                                            <motion.button
-                                                                key={idx}
-                                                                whileHover={{ scale: 1.05 }}
-                                                                whileTap={{ scale: 0.95 }}
-                                                                onClick={() => setSearchTerm(food.name)}
-                                                                style={{
-                                                                    padding: '8px 14px',
-                                                                    background: '#FEF3C7',
-                                                                    border: 'none',
-                                                                    borderRadius: '20px',
-                                                                    cursor: 'pointer',
-                                                                    display: 'flex',
-                                                                    alignItems: 'center',
-                                                                    gap: '6px',
-                                                                    fontSize: '13px',
-                                                                    fontWeight: '500',
-                                                                    color: '#1a1a1a'
-                                                                }}
-                                                            >
-                                                                <span>{food.emoji}</span>
-                                                                <span>{food.name}</span>
-                                                                <span style={{ color: '#6B7280', fontSize: '11px' }}>{food.cal}cal</span>
-                                                            </motion.button>
-                                                        ))}
-                                                </div>
-                                                <div style={{ textAlign: 'center', color: '#9CA3AF', marginTop: '16px', fontSize: '13px' }}>
-                                                    or type to search 3500+ foods
-                                                </div>
-                                            </div>
-                                        )}
                                     </div>
                                 </>
                             )}

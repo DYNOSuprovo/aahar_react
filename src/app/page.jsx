@@ -211,7 +211,7 @@ export default function Home() {
                         }}
                         whileTap={{ scale: 0.95 }}
                         style={{
-                            background: 'linear-gradient(135deg, #1DB954 0%, #0d7a3a 100%)',
+                            background: '#1DB954',
                             borderRadius: '20px',
                             display: 'flex',
                             flexDirection: 'column',
@@ -402,7 +402,7 @@ export default function Home() {
                     flexDirection: 'column',
                     justifyContent: 'center',
                     alignItems: 'center',
-                    padding: '40px 24px',
+                    padding: '40px 24px 80px 24px',
                     textAlign: 'center',
                     boxShadow: '0 -10px 40px rgba(0,0,0,0.08)'
                 }}
@@ -469,7 +469,7 @@ export default function Home() {
                 </motion.div>
 
                 {/* CTA Button */}
-                <Link href="/login" style={{ width: '100%', maxWidth: '320px' }}>
+                <Link href="/login" style={{ width: '100%', maxWidth: '320px', textDecoration: 'none' }}>
                     <motion.button
                         whileHover={{ scale: 1.02, boxShadow: '0 8px 30px rgba(29, 185, 84, 0.4)' }}
                         whileTap={{ scale: 0.98 }}
@@ -479,7 +479,7 @@ export default function Home() {
                         style={{
                             width: '100%',
                             padding: '18px 32px',
-                            background: 'linear-gradient(135deg, #1DB954 0%, #0d7a3a 100%)',
+                            background: '#1DB954',
                             color: 'white',
                             border: 'none',
                             borderRadius: '16px',
@@ -498,14 +498,7 @@ export default function Home() {
                     </motion.button>
                 </Link>
 
-                <motion.p
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 1.8 }}
-                    style={{ marginTop: '16px', fontSize: '12px', color: '#999' }}
-                >
-                    Free forever • No credit card required
-                </motion.p>
+
             </motion.div>
         </div>
     );
