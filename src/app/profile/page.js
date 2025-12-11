@@ -323,12 +323,8 @@ export default function Profile() {
                             borderRadius: '14px', fontSize: '14px', fontWeight: '600', cursor: 'pointer',
                             display: 'flex', alignItems: 'center', gap: '8px', margin: '0 auto'
                         }}>
-                        <LogOut size={18} /> Reset All Data
+                        <LogOut size={18} /> Reset & Logout
                     </motion.button>
-                    <div style={{ marginTop: '24px', display: 'flex', gap: '20px', justifyContent: 'center', fontSize: '12px', color: 'var(--text-secondary)' }}>
-                        <Link href="/about" style={{ textDecoration: 'none', color: 'inherit' }}>About Us</Link>
-                        <Link href="/privacy" style={{ textDecoration: 'none', color: 'inherit' }}>Privacy Policy</Link>
-                    </div>
                 </motion.div>
             </div>
             <BottomNav />

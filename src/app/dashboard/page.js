@@ -178,14 +178,16 @@ export default function Dashboard() {
             if (searchTerm.length > 2) {
                 setIsSearching(true);
                 const results = await searchFood(searchTerm);
-                setSearchResults(results);
+                // Apply dietary preference filters
+                const filteredResults = filterByPreferences(results);
+                setSearchResults(filteredResults);
                 setIsSearching(false);
             } else {
                 setSearchResults([]);
             }
         }, 500);
         return () => clearTimeout(delayDebounceFn);
-    }, [searchTerm]);
+    }, [searchTerm, filterByPreferences]);
 
     {/* AI Analysis State */ }
     const [analysis, setAnalysis] = useState(null);
@@ -508,8 +510,8 @@ export default function Dashboard() {
                             }}
                         >
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                                <h3 style={{ fontSize: '20px', fontWeight: '700', color: 'var(--text-primary)' }}>
-                                    Add Food
+                                <h3 style={{ fontSize: '20px', fontWeight: '700', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    🔍 Add to {selectedMealType?.charAt(0).toUpperCase() + selectedMealType?.slice(1)}
                                 </h3>
                                 <button onClick={() => { setIsAddFoodOpen(false); setSelectedItemForQuant(null); }}
                                     style={{ background: 'var(--bg-secondary)', border: 'none', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -556,6 +558,95 @@ export default function Dashboard() {
                                             style={{ border: 'none', background: 'transparent', outline: 'none', flex: 1, fontSize: '16px', color: 'var(--text-primary)' }} autoFocus />
                                     </div>
                                     <div style={{ flex: 1, overflowY: 'auto' }}>
+                                        {/* Quick Add Sections - Only show when not searching */}
+                                        {searchTerm.length < 3 && (
+                                            <>
+                                                {/* Popular Foods */}
+                                                <div style={{ marginBottom: '24px' }}>
+                                                    <h4 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                        🔥 Popular Foods
+                                                    </h4>
+                                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                                        {[
+                                                            { name: 'Roti', emoji: '🫓' },
+                                                            { name: 'Rice', emoji: '🍚' },
+                                                            { name: 'Dal', emoji: '🍲' },
+                                                            { name: 'Idli', emoji: '🥟' },
+                                                            { name: 'Dosa', emoji: '🥞' },
+                                                            { name: 'Paratha', emoji: '🫓' },
+                                                            { name: 'Poha', emoji: '🍚' },
+                                                            { name: 'Upma', emoji: '🍲' },
+                                                        ].map((food) => (
+                                                            <motion.button
+                                                                key={food.name}
+                                                                whileTap={{ scale: 0.95 }}
+                                                                onClick={() => setSearchTerm(food.name)}
+                                                                style={{
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    gap: '6px',
+                                                                    padding: '10px 14px',
+                                                                    borderRadius: '20px',
+                                                                    border: '1px solid var(--border-color)',
+                                                                    background: 'var(--bg-secondary)',
+                                                                    cursor: 'pointer',
+                                                                    fontSize: '13px',
+                                                                    fontWeight: '500',
+                                                                    color: 'var(--text-primary)'
+                                                                }}
+                                                            >
+                                                                <span>{food.emoji}</span>
+                                                                <span style={{ fontWeight: '600' }}>{food.name}</span>
+                                                            </motion.button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                {/* Healthy Choices */}
+                                                <div style={{ marginBottom: '24px' }}>
+                                                    <h4 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                        🥗 Healthy Choices
+                                                    </h4>
+                                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                                        {[
+                                                            { name: 'Sprouts', emoji: '🥗' },
+                                                            { name: 'Oats', emoji: '🥣' },
+                                                            { name: 'Salad', emoji: '🥬' },
+                                                            { name: 'Fruit', emoji: '🍎' },
+                                                            { name: 'Moong Dal', emoji: '🫘' },
+                                                        ].map((food) => (
+                                                            <motion.button
+                                                                key={food.name}
+                                                                whileTap={{ scale: 0.95 }}
+                                                                onClick={() => setSearchTerm(food.name)}
+                                                                style={{
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    gap: '6px',
+                                                                    padding: '10px 14px',
+                                                                    borderRadius: '20px',
+                                                                    border: '1px solid var(--border-color)',
+                                                                    background: 'var(--bg-secondary)',
+                                                                    cursor: 'pointer',
+                                                                    fontSize: '13px',
+                                                                    fontWeight: '500',
+                                                                    color: 'var(--text-primary)'
+                                                                }}
+                                                            >
+                                                                <span>{food.emoji}</span>
+                                                                <span style={{ fontWeight: '600' }}>{food.name}</span>
+                                                            </motion.button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px', marginBottom: '16px' }}>
+                                                    or type to search 3500+ foods
+                                                </p>
+                                            </>
+                                        )}
+
+                                        {/* Search Results */}
                                         {!isSearching && searchResults.map((item, idx) => (
                                             <motion.div key={idx} whileHover={{ background: 'var(--bg-secondary)' }} onClick={() => handleFoodClick(item)}
                                                 style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', cursor: 'pointer', borderRadius: '12px' }}>
