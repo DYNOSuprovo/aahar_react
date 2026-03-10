@@ -16,35 +16,40 @@ AAHAR operates on a decoupled client-server architecture. It is not just a "wrap
 ### 🔄 The End-to-End Data Flow
 
 ```mermaid
-sequenceDiagram
-    autonumber
-    participant UI as Next.js Frontend
-    participant FastAPI as Backend Router
-    participant NLP as Query Analyzer
-    participant Agent as Agentic Orchestrator (Gemini)
-    participant Tools as External Tools / DBs
-    participant Groq as Fallback LLMs (Groq)
+graph TD
+    %% Define Styles
+    classDef client fill:#e1bee7,stroke:#8e24aa,stroke-width:2px;
+    classDef api fill:#bbdefb,stroke:#1976d2,stroke-width:2px;
+    classDef core fill:#c8e6c9,stroke:#388e3c,stroke-width:2px;
+    classDef data fill:#ffccbc,stroke:#d84315,stroke-width:2px;
+    classDef external fill:#ffe0b2,stroke:#f57c00,stroke-width:2px;
 
-    UI->>FastAPI: POST /chat (User Query, Session ID)
-    FastAPI->>NLP: Extract Intent (Diet type, Region, Goal)
-    NLP-->>FastAPI: Extracted Metadata
-    FastAPI->>Agent: Trigger ReAct Loop with Chat History
-    
-    loop Agentic Reasoning (Max 6 Iterations)
-        Agent->>Agent: Think (What information do I need?)
-        Agent->>Tools: Action (Call Weather API / RAG / Nutrition DB)
-        Tools-->>Agent: Observation (Raw Data Result)
+    User([User App / Web]):::client -- "Interacts" --> NextJS[Next.js PWA UI]:::client
+
+    subgraph Frontend [React Application Experience]
+        NextJS -- "0ms Offline Search" --> NutritionJSON[(nutrition_data.json)]:::data
+        NextJS -- "POST /chat" --> APIClient[API Layer]:::client
     end
-    
-    Agent->>FastAPI: Final Synthesized Answer Generated
-    
-    alt If Gemini Fails or Rate Limits
-        FastAPI->>Groq: Async Multi-Threaded Request (Llama/Mixtral)
-        Groq-->>FastAPI: Fallback Answer
+
+    subgraph Backend [FastAPI Server]
+        APIClient -- "Async HTTP" --> Router[FastAPI Routers]:::api
+        Router -- "Extract Intent" --> NLP[Query Analysis Module]:::core
+        Router -- "Trigger Loop" --> Orchestrator{Agentic Orchestrator}:::core
     end
-    
-    FastAPI-->>UI: JSON Response (AI Message)
-    UI->>UI: Render Message with Framer Motion
+
+    subgraph Tools & Local Persistence
+        Orchestrator -- "Semantic RAG" --> RAG[(ChromaDB Vector Store)]:::data
+        Orchestrator -- "Deterministic Math" --> PandasDB[(Pandas Nutrition DB)]:::data
+        Orchestrator -- "Live Climate" --> WeatherAPI((OpenWeather HTTP APIs)):::external
+    end
+
+    subgraph External LLMs
+        Orchestrator -- "Core Identity" --> Gemini[Google Gemini 2.5 Flash]:::external
+        Orchestrator -- "99.9% Uptime Fallbacks" --> GroqLPU[Groq Hardware: Llama 3 / Mixtral]:::external
+    end
+
+    Gemini -- "Final Synthesized String" --> Router
+    GroqLPU -- "Fallback Synthesized String" --> Router
 ```
 
 ---
